@@ -1,9 +1,14 @@
 function init()
     print("Initializing Purchases Task")
-    m.port = createObject("roMessagePort")
-    m.top.observeField("api", m.port)
-    m.top.functionName = "runloop"
-    m.top.control = "RUN"
+    if m.global.getField("purchases_task_initialized") = invalid then
+        m.global.addFields({"purchases_task_initialized": true})
+        m.port = CreateObject("roMessagePort")
+        m.top.observeField("api", m.port)
+        m.top.functionName = "runloop"
+        m.top.control = "RUN"
+    else
+        print("ERROR: PurchasesTask already initialized. Aborting")
+    end if
 end function
 
 sub runloop()
