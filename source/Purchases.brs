@@ -1,7 +1,12 @@
 function Purchases() as object
     if GetGlobalAA().rc_purchasesSingleton = invalid then
         print("Creating Purchases singleton")
-        task = createObject("roSGNode", "PurchasesTask")
+        task = m.global.getScene().findNode("purchasesTask")
+        if task = invalid then
+            print("Creating Purchases task")
+            task = m.global.getScene().createChild("PurchasesTask")
+            task.id = "purchasesTask"
+        end if
         GetGlobalAA().rc_purchasesSingleton = {
             configure: _Purchases_configure,
             syncPurchase: _Purchases_syncPurchase,
