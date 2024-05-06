@@ -5,6 +5,7 @@
 
   <script type="text/brightscript" uri="pkg:/components/screens/UpgradeScreen.brs" />
 
+  <script type="text/brightscript" uri="pkg:/source/Purchases.brs" />
   <interface>
       <field id="productName" type="string" />
       <field id="productCode" type="string" />

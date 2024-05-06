@@ -7,6 +7,8 @@ sub init()
   m.backButton = m.top.findNode("backUpgButton")
   m.backButton.observeField("buttonSelected", "onBackButtonSelected")
   m.buttonSelected = ""
+
+  Purchases().configure({ "api_key": "upgrade_screen_key" })
 end sub
 
 sub handleProductNameSet(msg)

@@ -20,10 +20,36 @@ sub init()
     '  this contains the data coming from getPurchaseList'
     m.purchases = {}
 
-    Purchases().configure({ "api_key": "1234" })
+    Purchases().configure({ "api_key": "product_screen_key" })
+    ' Purchases().purchase("product_id", "onMakePurchase")
+    Purchases().logIn("user1")
+    Purchases().logOut("user1")
+    Purchases().getOfferings({}, "onGetOfferings")
+    Purchases().getOfferings({}, sub(e)
+      print "getOfferings callback"
+      Purchases().purchase({ code: e.products[2].code, qty: 1 }, sub(e)
+        print "purchase callback"
+        for each transaction in e.transactions
+          print "transaction: "; transaction
+        end for
+      end sub)
+    end sub)
+    Purchases().getCustomerInfo()
+    ' Purchases().syncPurchases()
+
 
     print "ProductScreen GetGlobalAA: "; GetGlobalAA()
     print "ProductScreen getGlobalNode: "; m.global
+end sub
+
+sub onMakePurchase(event as Object)
+    print "onMakePurchase"
+    print "event: "; event.getData()
+end sub
+
+sub onGetOfferings(event as Object)
+  print "onGetOfferings"
+  print "event: "; event.getData()
 end sub
 
 function onGroupsChange(msg)
@@ -173,8 +199,7 @@ sub updatePurchases(purchaseData as object, activeProductCode as string) as obje
     ' print "calling updatePurchases()"
     purchases = {}
     for each productCode in purchaseData
-
-      Purchases().syncPurchase(purchaseData[productCode])
+      ' Purchases().syncPurchases({"purchase":purchaseData[productCode]})
 
       data = {}
       data.renewalDate = purchaseData[productCode].renewalDate
@@ -496,6 +521,9 @@ sub displayProductInfo(id)
 end sub
 
 function onKeyEvent(key as string, press as boolean) as boolean
+    Purchases().getOfferings({}, sub (e)
+      print "Offerings Product Screen"
+    end sub)
     handled = false
     if press
         ? "Product Screen - Key pressed: " + key
@@ -506,9 +534,9 @@ function onKeyEvent(key as string, press as boolean) as boolean
         end if
         if key = "right"
             index = m.commandList.ItemFocused
-            print "Item selected: ", stri(index)
+            ' print "Item selected: ", stri(index)
             if index = 0  ' Home
-                print "Home screen has focus"
+                ' print "Home screen has focus"
             else if index >= 1
                 m.listProducts[index-1].setFocus(true)
             end if

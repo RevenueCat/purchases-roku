@@ -6,6 +6,10 @@ function init()
         m.top.observeField("api", m.port)
         m.top.functionName = "runloop"
         m.top.control = "RUN"
+        m.store = CreateObject("roChannelStore")
+        m.store.SetMessagePort(m.port)
+        m.purchases = _PurchasesSDK(m.top)
+        m.callbackCounter = 0
     else
         print("ERROR: PurchasesTask already initialized. Aborting")
     end if
@@ -20,141 +24,44 @@ sub runloop()
         else
             messageType = type(msg)
             if messageType = "roSGNodeEvent" then
-                field = msg.getField()
-                if field = "api" then
-                    data = msg.getData().data
-                    purchase = data.purchase
-                    _fetch({
-                        url: "https://webhook.site/markrokureceipt"
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        method: "POST",
-                        body: FormatJson({
-                            code: purchase.code,
-                            cost: purchase.cost,
-                            description: purchase.description,
-                            expirationDate: purchase.expirationDate
-                            freeTrialQuantity: purchase.freeTrialQuantity,
-                            freeTrialType: purchase.freeTrialType,
-                            inDunning: purchase.inDunning,
-                            name: purchase.name,
-                            productType: purchase.productType,
-                            purchaseChannel: purchase.purchaseChannel,
-                            purchaseContext: purchase.purchaseContext,
-                            purchaseDate: purchase.purchaseDate,
-                            purchaseId: purchase.purchaseId,
-                            qty: purchase.qty,
-                            renewalDate: purchase.renewalDate,
-                            status: purchase.status,
-                            trialCost: purchase.trialCost,
-                            trialQuantity: purchase.trialQuantity,
-                            trialType: purchase.trialType,
-                        })
-                    })
+                if msg.getField()="api"
+                    _execute(msg.getData())
+                else if msg.getField()="response"
+                    data = msg.getData()
+                    m.top[data.callbackfield] = data.response
+                    m.top.unobserveField(data.callbackField)
+                    m.top.removeField(data.callbackField)
                 end if
+            else if messageType = "roChannelStoreEvent" then
+                print("roChannelStoreEvent Event")
+            else
+                print("Unknown message type: " + messageType)
             end if
         end if
     end while
 end sub
 
-' options: {
-'     url:     [req] string - http or https url
-'     timeout: [opt] int - ms to wait before timeout (defaults to 0 (no timeout))
-'     headers: [opt] assocarray - list of request headers where key=headername and val=headervalue
-'     method:  [opt] string - the HTTP method. GET|POST|PUT|DELETE|etc (defaults to GET)
-'                if you are doing a normal GET or POST, you can omit this - it is only useful for the other verbs
-'     body:    [opt] string - the preformatted request body (ie: form data).
-'                if specified, the request method will default to POST unless overridden with options.method
-' }
-'
-' returns Response object: {
-'    status:  int - the HTTP status code (ex: 200); can be negative to indicate transport error
-'    ok:      bool - true if the response is successful (200-299)
-'    headers: assocarray - where each header name is a key and the value is an object
-'    text():  string - function that returns the raw string response
-'    json():  object - function that returns the response parsed as JSON
-'    xml():   object - function that returns the response parsed as an roXmlElement
-' }
-'
-function _fetch(options)
-    timeout = options.timeout
-    if timeout = invalid then timeout = 0
+function _execute(apiCall as Object)
+    args = apiCall.args
+    length = args.count()
+    target = m.purchases
+    methodName = apiCall.method
 
-    response = invalid
-    port = CreateObject("roMessagePort")
-    request = CreateObject("roUrlTransfer")
-    request.SetCertificatesFile("common:/certs/ca-bundle.crt")
-    request.InitClientCertificates()
-    request.RetainBodyOnError(true)
-    request.SetMessagePort(port)
-    if options.headers <> invalid
-        for each header in options.headers
-            val = options.headers[header]
-            if val <> invalid then request.addHeader(header, val)
-        end for
+    if (length = 0) then
+        target[methodName]()
+    else if (length = 1) then
+        target[methodName](args[0])
+    else if (length = 2) then
+        target[methodName](args[0], args[1])
+    else if (length = 3) then
+        target[methodName](args[0], args[1], args[2])
+    else if (length = 4) then
+        target[methodName](args[0], args[1], args[2], args[3])
+    else if (length = 5) then
+        target[methodName](args[0], args[1], args[2], args[3], args[4])
+    else if (length = 6) then
+        target[methodName](args[0], args[1], args[2], args[3], args[4], args[5])
+    else if (length = 7) then
+        target[methodName](args[0], args[1], args[2], args[3], args[4], args[5], args[6])
     end if
-    if options.method <> invalid
-        request.setRequest(options.method)
-    end if
-    request.SetUrl(options.url)
-
-    requestSent = invalid
-    if options.body <> invalid
-        requestSent = request.AsyncPostFromString(options.body)
-    else
-        requestSent = request.AsyncGetToString()
-    end if
-    if (requestSent)
-        msg = wait(timeout, port)
-        status = -999
-        body = "(TIMEOUT)"
-        headers = {}
-        if (type(msg) = "roUrlEvent")
-            status = msg.GetResponseCode()
-            headersArray = msg.GetResponseHeadersArray()
-            for each headerObj in headersArray
-                for each headerName in headerObj
-                    val = {
-                        value: headerObj[headerName]
-                        next: invalid
-                    }
-                    current = headers[headerName]
-                    if current <> invalid
-                        prev = current
-                        while current <> invalid
-                            prev = current
-                            current = current.next
-                        end while
-                        prev.next = val
-                    else
-                        headers[headerName] = val
-                    end if
-                end for
-            end for
-            body = msg.GetString()
-            if status < 0 then body = msg.GetFailureReason()
-        end if
-
-        response = {
-            _body: body,
-            status: status,
-            ok: (status >= 200 AND status < 300),
-            headers: headers,
-            text: function()
-                return m._body
-            end function,
-            json: function()
-                return ParseJSON(m._body)
-            end function,
-            xml: function()
-                if m._body = invalid then return invalid
-                xml = CreateObject("roXMLElement") '
-                if NOT xml.Parse(m._body) then return invalid
-                return xml
-            end function
-        }
-    end if
-
-    return response
 end function

@@ -18,4 +18,3 @@ sub RunUserInterface(args as object)
         end if
     end while
 end sub
-
