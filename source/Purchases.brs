@@ -11,55 +11,49 @@ function Purchases() as object
         GetGlobalAA().rc_purchasesSingleton = {
             _context: m.context,
             purchase: function(inputArgs = {}, callbackFunc = invalid as dynamic) as void
-                callbackField = m._setCallbackField(callbackFunc)
-                m._invokeFunction("purchase", [inputArgs, callbackField, callbackFunc])
+                m._invoke("purchase", inputArgs, callbackFunc)
             end function,
             configure: function(inputArgs = {}) as void
-                print("configure")
+                m._global.revenueCatSDKConfig = inputArgs
             end function,
             logIn: function(inputArgs = {}, callbackFunc = invalid as dynamic) as void
-                callbackField = m._setCallbackField(callbackFunc)
-                m._invokeFunction("logIn", [inputArgs, callbackField, callbackFunc])
+                m._invoke("logIn", inputArgs, callbackFunc)
             end function,
             logOut: function(inputArgs = {}, callbackFunc = invalid as dynamic) as void
-                callbackField = m._setCallbackField(callbackFunc)
-                m._invokeFunction("logOut", [inputArgs, callbackField, callbackFunc])
+                m._invoke("logOut", inputArgs, callbackFunc)
             end function,
             getCustomerInfo: function(inputArgs = {}, callbackFunc = invalid as dynamic) as void
-                callbackField = m._setCallbackField(callbackFunc)
-                m._invokeFunction("getCustomerInfo", [inputArgs, callbackField, callbackFunc])
+                m._invoke("getCustomerInfo", inputArgs, callbackFunc)
             end function,
             syncPurchases: function(inputArgs = {}, callbackFunc = invalid as dynamic) as void
-                callbackField = m._setCallbackField(callbackFunc)
-                m._invokeFunction("syncPurchases", [inputArgs, callbackField, callbackFunc])
+                m._invoke("syncPurchases", inputArgs, callbackFunc)
             end function,
             getOfferings: function(inputArgs = {}, callbackFunc = invalid as dynamic) as void
-                callbackField = m._setCallbackField(callbackFunc)
-                m._invokeFunction("getOfferings", [inputArgs, callbackField, callbackFunc])
+                m._invoke("getOfferings", inputArgs, callbackFunc)
             end function,
-            _setCallbackField: function(callbackFunc as dynamic) as string
+            _setCallbackID: function(callbackFunc as dynamic) as string
                 m._task.callbackID++
                 if (m._task.callbackID >= 100000) then
                     m._task.callbackID = 1
                 end if
-                callbackField = m._task.callbackID.tostr()
-                m._task.addField(callbackField, "assocarray", false)
+                callbackID = m._task.callbackID.tostr()
+                m._task.addField(callbackID, "assocarray", false)
                 valueType = type(callbackFunc)
                 if valueType = "roFunction" or valueType = "Function" then
-                    m._task.observeField(callbackField, "_invokeCallbackFunction")
-                    m._context[callbackField] = callbackFunc
+                    m._task.observeField(callbackID, "_invokeCallbackFunction")
+                    m._context[callbackID] = callbackFunc
                 else if valueType = "roString" or valueType = "String" then
-                    m._task.observeField(callbackField, callbackFunc)
+                    m._task.observeField(callbackID, callbackFunc)
                 else
-                    m._task.observeField(callbackField, "")
+                    m._task.observeField(callbackID, "")
                 end if
-                return callbackField
+                return callbackID
             end function,
-            _invokeFunction: function(name as string, args)
-                invocation = {}
-                invocation.method = name
-                invocation.args = args
-                m._task["api"] = invocation
+            _invoke: function(name as string, inputArgs = {}, callbackFunc = invalid as dynamic)
+                m._task["api"] = {
+                    method: name,
+                    args: [inputArgs, m._setCallbackID(callbackFunc), callbackFunc]
+                }
             end function
             _task: task,
         }
