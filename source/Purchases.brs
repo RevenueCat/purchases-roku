@@ -6,11 +6,13 @@ function Purchases() as object
             print("Creating Purchases task")
             task = m.global.getScene().createChild("PurchasesTask")
             task.id = "purchasesTask"
+            m.global.addFields({revenueCatSDKConfig: {}})
         end if
         m.context = {}
         GetGlobalAA().rc_purchasesSingleton = {
             _context: m.context,
             purchase: function(inputArgs = {}, callbackFunc = invalid as dynamic) as void
+            _global: m.global,
                 m._invoke("purchase", inputArgs, callbackFunc)
             end function,
             configure: function(inputArgs = {}) as void
