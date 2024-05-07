@@ -36,10 +36,6 @@ sub init()
     end sub)
     Purchases().getCustomerInfo()
     ' Purchases().syncPurchases()
-
-
-    print "ProductScreen GetGlobalAA: "; GetGlobalAA()
-    print "ProductScreen getGlobalNode: "; m.global
 end sub
 
 sub onMakePurchase(event as Object)
@@ -373,10 +369,6 @@ sub onCommandItemFocused(msg as Object)
 end sub
 
 sub onCommandItemSelected(msg as Object)
-  index = msg.getData()
-  if index = 2
-    m.task = CreatePurchasesSDK()
-  end if
 end sub
 
 ' Callback for an item in focus '

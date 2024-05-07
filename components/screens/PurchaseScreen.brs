@@ -7,8 +7,6 @@ sub init()
   m.purchaseButton.observeField("buttonSelected", "onPurchaseButtonSelected")
   m.backButton = m.top.findNode("backPurchButton")
   m.backButton.observeField("buttonSelected", "onBackButtonSelected")
-
-  Purchases().configure({ "api_key": "purchase_screen_key" })
 end sub
 
 sub handleProductNameSet(msg)
