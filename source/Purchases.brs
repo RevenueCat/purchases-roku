@@ -11,28 +11,31 @@ function Purchases() as object
         m.context = {}
         GetGlobalAA().rc_purchasesSingleton = {
             _context: m.context,
-            purchase: function(inputArgs = {}, callbackFunc = invalid as dynamic) as void
             _global: m.global,
+            purchase: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
                 m._invoke("purchase", inputArgs, callbackFunc)
-            end function,
-            configure: function(inputArgs = {}) as void
+            end sub,
+            configure: sub(inputArgs = {} as object)
                 m._global.revenueCatSDKConfig = inputArgs
-            end function,
-            logIn: function(inputArgs = {}, callbackFunc = invalid as dynamic) as void
+            end sub,
+            logIn: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
                 m._invoke("logIn", inputArgs, callbackFunc)
-            end function,
-            logOut: function(inputArgs = {}, callbackFunc = invalid as dynamic) as void
+            end sub,
+            logOut: sub(inputArgs as object, callbackFunc = invalid as dynamic)
                 m._invoke("logOut", inputArgs, callbackFunc)
-            end function,
-            getCustomerInfo: function(inputArgs = {}, callbackFunc = invalid as dynamic) as void
+            end sub,
+            setAttributes: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
+                m._invoke("setAttributes", inputArgs, callbackFunc)
+            end sub,
+            getCustomerInfo: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
                 m._invoke("getCustomerInfo", inputArgs, callbackFunc)
-            end function,
-            syncPurchases: function(inputArgs = {}, callbackFunc = invalid as dynamic) as void
+            end sub,
+            syncPurchases: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
                 m._invoke("syncPurchases", inputArgs, callbackFunc)
-            end function,
-            getOfferings: function(inputArgs = {}, callbackFunc = invalid as dynamic) as void
+            end sub,
+            getOfferings: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
                 m._invoke("getOfferings", inputArgs, callbackFunc)
-            end function,
+            end sub,
             _setCallbackID: function(callbackFunc as dynamic) as string
                 m._task.callbackID++
                 if (m._task.callbackID >= 100000) then
