@@ -71,15 +71,50 @@ sub _invokeCallbackFunction(e as object)
 end sub
 
 function _PurchasesSDK(task as object) as object
+    _baseURL = "https://api.revenuecat.com/v1/"
     return {
+        _defaultHeaders: {
+            "X-Platform-Flavor": "native",
+            "X-Platform": "roku",
+            "X-Client-Build-Version": "1",
+            "X-Client-Bundle-ID": "com.revenuecat.sampleapp",
+            "X-Client-Version": "1.0",
+            "X-Version": "0.0.1",
+            "X-Platform-Version": "roku",
+            "X-Observer-Mode-Enabled": "false",
+            "X-Storefront": "ESP",
+            "X-Is-Sandbox": "true",
+        }
+        _urls: {
+            subscribers: _baseURL + "subscribers/",
+            identify: _baseURL + "subscribers/identify/",
+            receipts: _baseURL + "receipts/",
+        }
+        _global: m.global,
+        saveConfig: function(config as Object) as Void
+            section = createObject("roRegistrySection", "RevenueCatConfig")
+            section.write("Config", formatJson(config))
+            section.flush()
+        end function,
+        getConfig: function() as Object
+            section = createObject("roRegistrySection", "RevenueCatConfig")
+            if section.exists("Config")
+                try
+                    config = parseJson(section.read("Config"))
+                    if type(config) = "roAssociativeArray" then return config
+                catch e
+                    print("Failed to read config:" + e.message)
+                end try
+            end if
+        end function,
         purchase: function(inputArgs = {}, callbackField = "", callbackFunc = "") as void
             port = CreateObject("roMessagePort")
             store = CreateObject("roChannelStore")
             store.SetMessagePort(port)
+            ' store.SetOrder([{ code: inputArgs.code, qty: inputArgs.qty }], { action: "Upgrade" })
             store.SetOrder([{ code: inputArgs.code, qty: inputArgs.qty }])
             store.DoOrder()
             msg = wait(0, port)
-            print("msg: ")
             if (type(msg) = "roChannelStoreEvent")
                 ProcessRoChannelStoreEvent(msg)
             end if
@@ -91,14 +126,56 @@ function _PurchasesSDK(task as object) as object
             m.task.unobserveField(callbackField)
             m.task.removeField(callbackField)
         end function,
+        identify: function(inputArgs = {}) as object
+            headers = {
+                "Authorization": "Bearer " + m._global.revenueCatSDKConfig.api_key,
+                "Content-Type": "application/json",
+            }
+            headers.Append(m._defaultHeaders)
+            return _fetch({
+                url: m._urls.identify,
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                method: "POST",
+                body: FormatJson({
+                    "app_user_id": inputArgs,
+                    "new_app_user_id": inputArgs,
+                })
+            })
+        end function,
         logIn: function(inputArgs = {}, callbackField = "", callbackFunc = "") as void
-            print("logIn")
+            m.saveConfig({ userID: inputArgs })
+            result = m.identify(inputArgs)
+            m.task[callbackField] = result.json().subscriber
+            m.task.unobserveField(callbackField)
+            m.task.removeField(callbackField)
         end function,
         logOut: function(inputArgs = {}, callbackField = "", callbackFunc = "") as void
-            print("logOut")
+            result = m.identify("anon_user")
+            m.task[callbackField] = result.json().subscriber
+            m.task.unobserveField(callbackField)
+            m.task.removeField(callbackField)
         end function,
         getCustomerInfo: function(inputArgs = {}, callbackField = "", callbackFunc = "") as void
-            print("getCustomerInfo")
+            headers = {
+                "Authorization": "Bearer " + m._global.revenueCatSDKConfig.api_key,
+            }
+            headers.Append(m._defaultHeaders)
+            result = _fetch({
+                url: m._urls.subscribers + m.getConfig().userID,
+                headers: headers,
+                method: "GET"
+            })
+            m.task[callbackField] = result.json().subscriber
+            m.task.unobserveField(callbackField)
+            m.task.removeField(callbackField)
+        end function,
+        setAttributes: function(inputArgs = {}, callbackField = "", callbackFunc = "") as void
+            print("setAttributes")
+            m.task[callbackField] = {}
+            m.task.unobserveField(callbackField)
+            m.task.removeField(callbackField)
         end function,
         syncPurchases: function(inputArgs = {}, callbackField = "", callbackFunc = "") as void
             purchase = inputArgs.purchase
@@ -130,8 +207,11 @@ function _PurchasesSDK(task as object) as object
                     trialType: purchase.trialType,
                 })
             })
+            m.task[callbackField] = {}
+            m.task.unobserveField(callbackField)
+            m.task.removeField(callbackField)
         end function,
-        getOfferings: function(inputArgs = {}, callbackField = "", callbackFunc = "") as void
+        getProductsById: function() as object
             port = CreateObject("roMessagePort")
             store = CreateObject("roChannelStore")
             store.SetMessagePort(port)
@@ -140,7 +220,74 @@ function _PurchasesSDK(task as object) as object
             if (type(msg) = "roChannelStoreEvent")
                 ProcessRoChannelStoreEvent(msg)
             end if
-            m.task[callbackField] = { "products": msg.GetResponse() }
+            products = msg.GetResponse()
+            productsByID = {}
+            for each product in products
+                productsByID[product.code] = product
+            end for
+            return productsByID
+        end function,
+        getOfferings: function(inputArgs = {}, callbackField = "", callbackFunc = "") as void
+            headers = {
+                "Authorization": "Bearer " + m._global.revenueCatSDKConfig.api_key,
+            }
+            headers.Append(m._defaultHeaders)
+            result = _fetch({
+                url: m._urls.subscribers + m.getConfig().userID + "/offerings",
+                headers: headers,
+                method: "GET"
+            })
+            offerings = result.json()
+            current_offering_id = offerings.current_offering_id
+            current_offering = invalid
+            all_offerings = []
+            productsByID = m.getProductsById()
+            for each offering in offerings.offerings
+                annual = invalid
+                monthly = invalid
+                packages = []
+                for each package in offering.packages
+                    product = productsByID[package.platform_product_identifier]
+                    if product = invalid then continue for
+                    if package.identifier = "$rc_annual"
+                        annual = {
+                            identifier: package.identifier,
+                            packageType: "annual"
+                            product: productsByID[package.platform_product_identifier],
+                        }
+                        packages.push(annual)
+                    else if package.identifier = "$rc_monthly"
+                        monthly = {
+                            identifier: package.identifier,
+                            packageType: "monthly"
+                            product: productsByID[package.platform_product_identifier],
+                        }
+                        packages.push(monthly)
+                    else
+                        packages.push({
+                            identifier: package.identifier,
+                            packageType: "custom"
+                            product: productsByID[package.platform_product_identifier],
+                        })
+                    end if
+                end for
+                o = {
+                    identifier: offering.identifier,
+                    metadata: offering.metadata,
+                    description: offering.description,
+                    annual: annual,
+                    monthly: monthly,
+                    packages: packages,
+                }
+                all_offerings.push(o)
+                if offering.identifier = current_offering_id
+                    current_offering = o
+                end if
+            end for
+            m.task[callbackField] = {
+                current: current_offering,
+                all: all_offerings,
+            }
             m.task.unobserveField(callbackField)
             m.task.removeField(callbackField)
         end function,
