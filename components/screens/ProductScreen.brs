@@ -20,21 +20,26 @@ sub init()
     '  this contains the data coming from getPurchaseList'
     m.purchases = {}
 
-    Purchases().configure({ "api_key": "product_screen_key" })
-    ' Purchases().purchase("product_id", "onMakePurchase")
-    Purchases().logIn("user1")
-    Purchases().logOut("user1")
-    Purchases().getOfferings({}, "onGetOfferings")
+    Purchases().configure({ "api_key": "XXXXX" })
+    Purchases().logIn("user1", sub(e)
+      print "logIn callback"
+    end sub)
+    Purchases().logOut({}, sub(e)
+      print "logOut callback"
+    end sub)
+    ' Purchases().getOfferings({}, "onGetOfferings")
     Purchases().getOfferings({}, sub(e)
-      print "getOfferings callback"
-      Purchases().purchase({ code: e.products[2].code, qty: 1 }, sub(e)
+      print "getOfferings callback"; e
+      Purchases().purchase({ code: e.current.monthly.product.code, qty: 1 }, sub(e)
         print "purchase callback"
         for each transaction in e.transactions
           print "transaction: "; transaction
         end for
       end sub)
     end sub)
-    Purchases().getCustomerInfo()
+    Purchases().getCustomerInfo({}, sub(e)
+      print "getCustomerInfo: "; e
+    end sub)
     ' Purchases().syncPurchases()
 end sub
 
