@@ -8,7 +8,7 @@ function init()
         m.top.control = "RUN"
         m.store = CreateObject("roChannelStore")
         m.store.SetMessagePort(m.port)
-        m.purchases = _PurchasesSDK({ task: m.top })
+        m.purchases = _PurchasesSDK({ task: m.top, global: m.global })
         m.callbackCounter = 0
     else
         print("ERROR: PurchasesTask already initialized. Aborting")

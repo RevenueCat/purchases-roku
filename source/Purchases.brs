@@ -15,8 +15,8 @@ function Purchases() as object
             purchase: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
                 m._invoke("purchase", inputArgs, callbackFunc)
             end sub,
-            configure: sub(inputArgs = {} as object)
-                m._global.revenueCatSDKConfig = inputArgs
+            configure: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
+                m._invoke("configure", inputArgs, callbackFunc)
             end sub,
             logIn: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
                 m._invoke("logIn", inputArgs, callbackFunc)
@@ -57,7 +57,8 @@ function Purchases() as object
             _invoke: function(name as string, inputArgs = {}, callbackFunc = invalid as dynamic)
                 m._task["api"] = {
                     method: name,
-                    args: [inputArgs, m._setCallbackID(callbackFunc), callbackFunc]
+                    args: inputArgs,
+                    callbackID: m._setCallbackID(callbackFunc),
                 }
             end function
             _task: task,
@@ -72,6 +73,58 @@ end sub
 
 function _PurchasesSDK(o as object) as object
     _baseURL = "https://api.revenuecat.com/v1/"
+
+    billing = {
+        purchase: function(inputArgs = {}) as object
+            port = CreateObject("roMessagePort")
+            store = CreateObject("roChannelStore")
+            store.SetMessagePort(port)
+            ' store.SetOrder([{ code: inputArgs.code, qty: inputArgs.qty }], { action: "Upgrade" })
+            store.SetOrder([{ code: inputArgs.code, qty: inputArgs.qty }])
+            store.DoOrder()
+            msg = wait(0, port)
+            if (type(msg) = "roChannelStoreEvent")
+                ProcessRoChannelStoreEvent(msg)
+            end if
+            transactions = msg.GetResponse()
+            for each transaction in transactions
+                m.syncPurchases({purchase: transaction})
+              end for
+            return { transactions: transactions }
+        end function,
+        getTransactions: function() as object
+            port = CreateObject("roMessagePort")
+            store = CreateObject("roChannelStore")
+            store.SetMessagePort(port)
+            store.GetTransactions()
+            msg = wait(0, port)
+            if (type(msg) = "roChannelStoreEvent")
+                ProcessRoChannelStoreEvent(msg)
+            end if
+            transactions = msg.GetResponse()
+            return transactions
+        end function,
+        getProductsById: function() as object
+            port = CreateObject("roMessagePort")
+            store = CreateObject("roChannelStore")
+            store.SetMessagePort(port)
+            store.GetCatalog()
+            msg = wait(0, port)
+            if (type(msg) = "roChannelStoreEvent")
+                ProcessRoChannelStoreEvent(msg)
+            end if
+            products = msg.GetResponse()
+            productsByID = {}
+            for each product in products
+                productsByID[product.code] = product
+            end for
+            return productsByID
+        end function,
+    }
+    if o.billing <> invalid then
+        billing = o.billing
+    end if
+
     return {
         _defaultHeaders: {
             "X-Platform-Flavor": "native",
@@ -90,7 +143,8 @@ function _PurchasesSDK(o as object) as object
             identify: _baseURL + "subscribers/identify/",
             receipts: _baseURL + "receipts/",
         }
-        _global: m.global,
+        billing: billing,
+        _global: o.global,
         saveConfig: function(config as Object) as Void
             section = createObject("roRegistrySection", "RevenueCatConfig")
             section.write("Config", formatJson(config))
@@ -101,28 +155,27 @@ function _PurchasesSDK(o as object) as object
             if section.exists("Config")
                 try
                     config = parseJson(section.read("Config"))
-                    if type(config) = "roAssociativeArray" then return config
                 catch e
                     print("Failed to read config:" + e.message)
                 end try
+                if type(config) = "roAssociativeArray" then return config
             end if
         end function,
-        purchase: function(inputArgs = {}) as object
-            port = CreateObject("roMessagePort")
-            store = CreateObject("roChannelStore")
-            store.SetMessagePort(port)
-            ' store.SetOrder([{ code: inputArgs.code, qty: inputArgs.qty }], { action: "Upgrade" })
-            store.SetOrder([{ code: inputArgs.code, qty: inputArgs.qty }])
-            store.DoOrder()
-            msg = wait(0, port)
-            if (type(msg) = "roChannelStoreEvent")
-                ProcessRoChannelStoreEvent(msg)
-            end if
-            transactions = msg.GetResponse()
-            for each transaction in transactions
-                m.syncPurchases({purchase: transaction})
-              end for
-            return { transactions: transactions }
+        updateCustomerCache: function(customer as Object) as Void
+            ' save customer info to disk cache
+        end function,
+        getCustomerCache: function() as Object
+            ' read customer info from disk cache if not stale
+        end function,
+        updateOfferingsCache: function(offerings as Object) as Void
+            ' save offerings to disk cache
+        end function,
+        getOfferingsCache: function() as Object
+            ' read offerings from disk cache if not stale
+        end function,
+        configure: function(inputArgs = {}) as object
+            m._global.revenueCatSDKConfig = inputArgs
+            return {}
         end function,
         identify: function(inputArgs = {}) as object
             headers = {
@@ -167,6 +220,9 @@ function _PurchasesSDK(o as object) as object
             print("setAttributes")
             return {}
         end function,
+        purchase: function(inputArgs = {}) as object
+            return m.billing.purchase(inputArgs)
+        end function,
         syncPurchases: function(inputArgs = {}) as object
             purchase = inputArgs.purchase
             _fetch({
@@ -199,22 +255,6 @@ function _PurchasesSDK(o as object) as object
             })
             return {}
         end function,
-        getProductsById: function() as object
-            port = CreateObject("roMessagePort")
-            store = CreateObject("roChannelStore")
-            store.SetMessagePort(port)
-            store.GetCatalog()
-            msg = wait(0, port)
-            if (type(msg) = "roChannelStoreEvent")
-                ProcessRoChannelStoreEvent(msg)
-            end if
-            products = msg.GetResponse()
-            productsByID = {}
-            for each product in products
-                productsByID[product.code] = product
-            end for
-            return productsByID
-        end function,
         getOfferings: function(inputArgs = {}) as object
             headers = {
                 "Authorization": "Bearer " + m._global.revenueCatSDKConfig.api_key,
@@ -229,7 +269,7 @@ function _PurchasesSDK(o as object) as object
             current_offering_id = offerings.current_offering_id
             current_offering = invalid
             all_offerings = []
-            productsByID = m.getProductsById()
+            productsByID = m.billing.getProductsById()
             for each offering in offerings.offerings
                 annual = invalid
                 monthly = invalid
@@ -292,14 +332,14 @@ end function
 
 function ProcessRoChannelStoreEvent(event as object) as void
     if event.isRequestSucceeded() then
-        ' print("Request success")
+        print("Request success")
         print(event.GetResponse())
     else if event.isRequestFailed() then
-        ' print("Request failure")
+        print("Request failure")
         print(event.GetStatus())
         print(event.GetStatusMessage())
     else if event.isRequestInterrupted() then
-        ' print("Request interrupted")
+        print("Request interrupted")
     end if
 end function
 
