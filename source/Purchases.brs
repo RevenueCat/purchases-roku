@@ -139,34 +139,32 @@ function _PurchasesSDK(o as object) as object
             "X-Storefront": "ESP",
             "X-Is-Sandbox": "true",
         }
+        headers: function() as object
+            headers = {
+                "Authorization": "Bearer " + m._global.revenueCatSDKConfig.api_key,
+                "Content-Type": "application/json",
+            }
+            headers.Append(m._defaultHeaders)
+            return headers
+        end function,
         _urls: {
             subscribers: _baseURL + "subscribers/",
             identify: _baseURL + "subscribers/identify/",
             receipts: _baseURL + "receipts/",
         },
         getOfferings: function(inputArgs = {}) as object
-            headers = {
-                "Authorization": "Bearer " + m._global.revenueCatSDKConfig.api_key,
-            }
-            headers.Append(m._defaultHeaders)
+
             result = _fetch({
                 url: m._urls.subscribers + inputArgs.userID + "/offerings",
-                headers: headers,
+                headers: m.headers(),
                 method: "GET"
             })
             return result.json()
         end function,
         identify: function(inputArgs = {}) as object
-            headers = {
-                "Authorization": "Bearer " + m._global.revenueCatSDKConfig.api_key,
-                "Content-Type": "application/json",
-            }
-            headers.Append(m._defaultHeaders)
             return _fetch({
                 url: m._urls.identify,
-                headers: {
-                    "Content-Type": "application/json"
-                },
+                headers: m.headers(),
                 method: "POST",
                 body: FormatJson({
                     "app_user_id": inputArgs,
@@ -175,13 +173,9 @@ function _PurchasesSDK(o as object) as object
             })
         end function,
         subscriber: function(inputArgs = {}) as object
-            headers = {
-                "Authorization": "Bearer " + m._global.revenueCatSDKConfig.api_key,
-            }
-            headers.Append(m._defaultHeaders)
             result = _fetch({
                 url: m._urls.subscribers + inputArgs.userID,
-                headers: headers,
+                headers: m.headers(),
                 method: "GET"
             })
         end function,
@@ -189,9 +183,7 @@ function _PurchasesSDK(o as object) as object
             purchase = inputArgs.purchase
             _fetch({
                 url: "https://webhook.site/markrokureceipt"
-                headers: {
-                    "Content-Type": "application/json"
-                },
+                headers: m.headers(),
                 method: "POST",
                 body: FormatJson({
                     code: purchase.code,
