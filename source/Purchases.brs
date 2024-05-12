@@ -125,7 +125,8 @@ function _PurchasesSDK(o as object) as object
         billing = o.billing
     end if
 
-    return {
+    api = {
+        _global: o.global,
         _defaultHeaders: {
             "X-Platform-Flavor": "native",
             "X-Platform": "roku",
@@ -142,8 +143,88 @@ function _PurchasesSDK(o as object) as object
             subscribers: _baseURL + "subscribers/",
             identify: _baseURL + "subscribers/identify/",
             receipts: _baseURL + "receipts/",
-        }
+        },
+        getOfferings: function(inputArgs = {}) as object
+            headers = {
+                "Authorization": "Bearer " + m._global.revenueCatSDKConfig.api_key,
+            }
+            headers.Append(m._defaultHeaders)
+            result = _fetch({
+                url: m._urls.subscribers + inputArgs.userID + "/offerings",
+                headers: headers,
+                method: "GET"
+            })
+            return result.json()
+        end function,
+        identify: function(inputArgs = {}) as object
+            headers = {
+                "Authorization": "Bearer " + m._global.revenueCatSDKConfig.api_key,
+                "Content-Type": "application/json",
+            }
+            headers.Append(m._defaultHeaders)
+            return _fetch({
+                url: m._urls.identify,
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                method: "POST",
+                body: FormatJson({
+                    "app_user_id": inputArgs,
+                    "new_app_user_id": inputArgs,
+                })
+            })
+        end function,
+        subscriber: function(inputArgs = {}) as object
+            headers = {
+                "Authorization": "Bearer " + m._global.revenueCatSDKConfig.api_key,
+            }
+            headers.Append(m._defaultHeaders)
+            result = _fetch({
+                url: m._urls.subscribers + inputArgs.userID,
+                headers: headers,
+                method: "GET"
+            })
+        end function,
+        postReceipt: function(inputArgs = {}) as object
+            purchase = inputArgs.purchase
+            _fetch({
+                url: "https://webhook.site/markrokureceipt"
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                method: "POST",
+                body: FormatJson({
+                    code: purchase.code,
+                    cost: purchase.cost,
+                    description: purchase.description,
+                    expirationDate: purchase.expirationDate
+                    freeTrialQuantity: purchase.freeTrialQuantity,
+                    freeTrialType: purchase.freeTrialType,
+                    inDunning: purchase.inDunning,
+                    name: purchase.name,
+                    productType: purchase.productType,
+                    purchaseChannel: purchase.purchaseChannel,
+                    purchaseContext: purchase.purchaseContext,
+                    purchaseDate: purchase.purchaseDate,
+                    purchaseId: purchase.purchaseId,
+                    qty: purchase.qty,
+                    renewalDate: purchase.renewalDate,
+                    status: purchase.status,
+                    trialCost: purchase.trialCost,
+                    trialQuantity: purchase.trialQuantity,
+                    trialType: purchase.trialType,
+                })
+            })
+        end function,
+
+    }
+    if o.api <> invalid then
+        api = o.api
+    end if
+
+    return {
         billing: billing,
+        api: api,
         _global: o.global,
         saveConfig: function(config as Object) as Void
             section = createObject("roRegistrySection", "RevenueCatConfig")
@@ -177,43 +258,17 @@ function _PurchasesSDK(o as object) as object
             m._global.revenueCatSDKConfig = inputArgs
             return {}
         end function,
-        identify: function(inputArgs = {}) as object
-            headers = {
-                "Authorization": "Bearer " + m._global.revenueCatSDKConfig.api_key,
-                "Content-Type": "application/json",
-            }
-            headers.Append(m._defaultHeaders)
-            return _fetch({
-                url: m._urls.identify,
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                method: "POST",
-                body: FormatJson({
-                    "app_user_id": inputArgs,
-                    "new_app_user_id": inputArgs,
-                })
-            })
-        end function,
         logIn: function(inputArgs = {}) as object
             m.saveConfig({ userID: inputArgs })
-            result = m.identify(inputArgs)
+            result = m.api.identify(inputArgs)
             return {}
         end function,
         logOut: function(inputArgs = {}) as object
-            result = m.identify("anon_user")
+            result = m.api.identify("anon_user")
             return {}
         end function,
         getCustomerInfo: function(inputArgs = {}) as object
-            headers = {
-                "Authorization": "Bearer " + m._global.revenueCatSDKConfig.api_key,
-            }
-            headers.Append(m._defaultHeaders)
-            result = _fetch({
-                url: m._urls.subscribers + m.getConfig().userID,
-                headers: headers,
-                method: "GET"
-            })
+            m.api.subscriber(m.getConfig().userID)
             return {}
         end function,
         setAttributes: function(inputArgs = {}) as object
@@ -225,47 +280,14 @@ function _PurchasesSDK(o as object) as object
         end function,
         syncPurchases: function(inputArgs = {}) as object
             purchase = inputArgs.purchase
-            _fetch({
-                url: "https://webhook.site/markrokureceipt"
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                method: "POST",
-                body: FormatJson({
-                    code: purchase.code,
-                    cost: purchase.cost,
-                    description: purchase.description,
-                    expirationDate: purchase.expirationDate
-                    freeTrialQuantity: purchase.freeTrialQuantity,
-                    freeTrialType: purchase.freeTrialType,
-                    inDunning: purchase.inDunning,
-                    name: purchase.name,
-                    productType: purchase.productType,
-                    purchaseChannel: purchase.purchaseChannel,
-                    purchaseContext: purchase.purchaseContext,
-                    purchaseDate: purchase.purchaseDate,
-                    purchaseId: purchase.purchaseId,
-                    qty: purchase.qty,
-                    renewalDate: purchase.renewalDate,
-                    status: purchase.status,
-                    trialCost: purchase.trialCost,
-                    trialQuantity: purchase.trialQuantity,
-                    trialType: purchase.trialType,
-                })
+            m.api.postReceipt({
+                userID: m.getConfig().userID,
+                purchase: purchase,
             })
             return {}
         end function,
         getOfferings: function(inputArgs = {}) as object
-            headers = {
-                "Authorization": "Bearer " + m._global.revenueCatSDKConfig.api_key,
-            }
-            headers.Append(m._defaultHeaders)
-            result = _fetch({
-                url: m._urls.subscribers + m.getConfig().userID + "/offerings",
-                headers: headers,
-                method: "GET"
-            })
-            offerings = result.json()
+            offerings = m.api.getOfferings({ userID: m.getConfig().userID })
             current_offering_id = offerings.current_offering_id
             current_offering = invalid
             all_offerings = []
