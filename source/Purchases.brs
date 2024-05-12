@@ -70,7 +70,7 @@ sub _invokeCallbackFunction(e as object)
     m.context[e.getField()](e.getData())
 end sub
 
-function _PurchasesSDK(task as object) as object
+function _PurchasesSDK(o as object) as object
     _baseURL = "https://api.revenuecat.com/v1/"
     return {
         _defaultHeaders: {
@@ -107,7 +107,7 @@ function _PurchasesSDK(task as object) as object
                 end try
             end if
         end function,
-        purchase: function(inputArgs = {}, callbackField = "", callbackFunc = "") as void
+        purchase: function(inputArgs = {}) as object
             port = CreateObject("roMessagePort")
             store = CreateObject("roChannelStore")
             store.SetMessagePort(port)
@@ -122,9 +122,7 @@ function _PurchasesSDK(task as object) as object
             for each transaction in transactions
                 m.syncPurchases({purchase: transaction})
               end for
-            m.task[callbackField] = { transactions: transactions }
-            m.task.unobserveField(callbackField)
-            m.task.removeField(callbackField)
+            return { transactions: transactions }
         end function,
         identify: function(inputArgs = {}) as object
             headers = {
@@ -144,20 +142,16 @@ function _PurchasesSDK(task as object) as object
                 })
             })
         end function,
-        logIn: function(inputArgs = {}, callbackField = "", callbackFunc = "") as void
+        logIn: function(inputArgs = {}) as object
             m.saveConfig({ userID: inputArgs })
             result = m.identify(inputArgs)
-            m.task[callbackField] = result.json().subscriber
-            m.task.unobserveField(callbackField)
-            m.task.removeField(callbackField)
+            return {}
         end function,
-        logOut: function(inputArgs = {}, callbackField = "", callbackFunc = "") as void
+        logOut: function(inputArgs = {}) as object
             result = m.identify("anon_user")
-            m.task[callbackField] = result.json().subscriber
-            m.task.unobserveField(callbackField)
-            m.task.removeField(callbackField)
+            return {}
         end function,
-        getCustomerInfo: function(inputArgs = {}, callbackField = "", callbackFunc = "") as void
+        getCustomerInfo: function(inputArgs = {}) as object
             headers = {
                 "Authorization": "Bearer " + m._global.revenueCatSDKConfig.api_key,
             }
@@ -167,17 +161,13 @@ function _PurchasesSDK(task as object) as object
                 headers: headers,
                 method: "GET"
             })
-            m.task[callbackField] = result.json().subscriber
-            m.task.unobserveField(callbackField)
-            m.task.removeField(callbackField)
+            return {}
         end function,
-        setAttributes: function(inputArgs = {}, callbackField = "", callbackFunc = "") as void
+        setAttributes: function(inputArgs = {}) as object
             print("setAttributes")
-            m.task[callbackField] = {}
-            m.task.unobserveField(callbackField)
-            m.task.removeField(callbackField)
+            return {}
         end function,
-        syncPurchases: function(inputArgs = {}, callbackField = "", callbackFunc = "") as void
+        syncPurchases: function(inputArgs = {}) as object
             purchase = inputArgs.purchase
             _fetch({
                 url: "https://webhook.site/markrokureceipt"
@@ -207,9 +197,7 @@ function _PurchasesSDK(task as object) as object
                     trialType: purchase.trialType,
                 })
             })
-            m.task[callbackField] = {}
-            m.task.unobserveField(callbackField)
-            m.task.removeField(callbackField)
+            return {}
         end function,
         getProductsById: function() as object
             port = CreateObject("roMessagePort")
@@ -227,7 +215,7 @@ function _PurchasesSDK(task as object) as object
             end for
             return productsByID
         end function,
-        getOfferings: function(inputArgs = {}, callbackField = "", callbackFunc = "") as void
+        getOfferings: function(inputArgs = {}) as object
             headers = {
                 "Authorization": "Bearer " + m._global.revenueCatSDKConfig.api_key,
             }
@@ -284,14 +272,21 @@ function _PurchasesSDK(task as object) as object
                     current_offering = o
                 end if
             end for
-            m.task[callbackField] = {
+           return {
                 current: current_offering,
                 all: all_offerings,
             }
-            m.task.unobserveField(callbackField)
-            m.task.removeField(callbackField)
         end function,
-        task: task
+        invokeMethod: function(args) as void
+            result = m[args.method](args.args)
+            if result <> invalid then
+                callbackField = args.callbackID
+                m.task[callbackField] = result
+                m.task.unobserveField(callbackField)
+                m.task.removeField(callbackField)
+            end if
+        end function,
+        task: o.task
     }
 end function
 
