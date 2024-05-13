@@ -92,11 +92,11 @@ function _PurchasesSDK(o as object) as object
               end for
             return { transactions: transactions }
         end function,
-        getTransactions: function() as object
+        getAllPurchases: function() as object
             port = CreateObject("roMessagePort")
             store = CreateObject("roChannelStore")
             store.SetMessagePort(port)
-            store.GetTransactions()
+            store.GetAllPurchases()
             msg = wait(0, port)
             if (type(msg) = "roChannelStoreEvent")
                 ProcessRoChannelStoreEvent(msg)
@@ -260,8 +260,7 @@ function _PurchasesSDK(o as object) as object
             return {}
         end function,
         getCustomerInfo: function(inputArgs = {}) as object
-            m.api.subscriber(m.getConfig().userID)
-            return {}
+            return m.api.subscriber({ userID: m.getConfig().userID })
         end function,
         setAttributes: function(inputArgs = {}) as object
             print("setAttributes")
