@@ -63,10 +63,10 @@ function onGroupsChange(msg)
     m.titleLabel.font.size = 40
     m.descriptionLabel = m.top.findNode("descriptionLabel")
     m.descriptionLabel.font.size = 30
-    m.descriptionLabel.text = "Demonstrates Roku Pay Upgrade/Downgrade" + chr(10) + chr(10) + "Preparation: go to Manage My In-Channel Products on the developer dashboard, set up a product group, and add your products to the group."
+    m.descriptionLabel.text = "PurchasesTester" + chr(10) + chr(10) + ""
     m.howToUseLabel = m.top.findNode("howToUseLabel")
     m.howToUseLabel.font.size = 30
-    m.howToUseLabel.text = "How to use: go to Subscriptions menu and select one product for purchase. When one product is already purchased (has a check mark), next product selected is an upgrade or downgrade."
+    m.howToUseLabel.text = ""
 
     ' delay setting up product lists until product and purchase lists are back'
     'setupProductLists(m.groups, m.listNames)
