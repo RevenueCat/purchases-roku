@@ -8,10 +8,15 @@
   "private": true,
   "devDependencies": {
     "brs-engine": "^1.6.0",
-    "roku-deploy": "^3.12.0"
+    "roku-deploy": "^3.12.0",
+    "@rokucommunity/bslint": "^0.8.20",
+    "brighterscript-formatter": "^1.7.1"
   },
   "scripts": {
     "tests": "zip -FS -9r roku-deploy.zip source/ components images/ manifest && yarn run brs-cli roku-deploy.zip",
-    "deploy": "roku-deploy"
+    "deploy": "roku-deploy",
+    "lint": "bslint --checkUsage",
+    "checkFormat": "bsfmt 'source/**/*.brs' 'components/**/*.brs' --check",
+    "format": "bsfmt 'source/**/*.brs' 'components/**/*.brs' --write"
   }
 }
