@@ -74,6 +74,11 @@ end sub
 function _PurchasesSDK(o as object) as object
     _baseURL = "https://api.revenuecat.com/v1/"
 
+    global = o.global
+    if global = invalid
+        global = {}
+    end if
+
     billing = {
         purchase: function(inputArgs = {}) as object
             port = CreateObject("roMessagePort")
