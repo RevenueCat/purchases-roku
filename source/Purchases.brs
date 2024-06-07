@@ -223,16 +223,16 @@ function _PurchasesSDK(o as object) as object
                 if type(config) = "roAssociativeArray" then return config
             end if
         end function,
-        updateCustomerCache: function(customer as Object) as Void
+        updateCustomerCache: function(customer as object) as void
             ' save customer info to disk cache
         end function,
-        getCustomerCache: function() as Object
+        getCustomerCache: function() as object
             ' read customer info from disk cache if not stale
         end function,
-        updateOfferingsCache: function(offerings as Object) as Void
+        updateOfferingsCache: function(offerings as object) as void
             ' save offerings to disk cache
         end function,
-        getOfferingsCache: function() as Object
+        getOfferingsCache: function() as object
             ' read offerings from disk cache if not stale
         end function,
         configure: function(inputArgs = {}) as object
@@ -314,7 +314,7 @@ function _PurchasesSDK(o as object) as object
                     current_offering = o
                 end if
             end for
-           return {
+            return {
                 current: current_offering,
                 all: all_offerings,
             }
@@ -426,7 +426,7 @@ function _fetch(options)
         response = {
             _body: body,
             status: status,
-            ok: (status >= 200 AND status < 300),
+            ok: (status >= 200 and status < 300),
             headers: headers,
             text: function()
                 return m._body
@@ -437,7 +437,7 @@ function _fetch(options)
             xml: function()
                 if m._body = invalid then return invalid
                 xml = CreateObject("roXMLElement") '
-                if NOT xml.Parse(m._body) then return invalid
+                if not xml.Parse(m._body) then return invalid
                 return xml
             end function
         }
