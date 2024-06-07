@@ -6,7 +6,7 @@ function Purchases() as object
             print("Creating Purchases task")
             task = m.global.getScene().createChild("PurchasesTask")
             task.id = "purchasesTask"
-            m.global.addFields({revenueCatSDKConfig: {}})
+            m.global.addFields({ revenueCatSDKConfig: {} })
         end if
         m.context = {}
         GetGlobalAA().rc_purchasesSingleton = {
