@@ -85,16 +85,13 @@ function _PurchasesSDK(o as object) as object
             store = CreateObject("roChannelStore")
             store.SetMessagePort(port)
             ' store.SetOrder([{ code: inputArgs.code, qty: inputArgs.qty }], { action: "Upgrade" })
-            store.SetOrder([{ code: inputArgs.code, qty: inputArgs.qty }])
+            store.SetOrder([{ code: inputArgs.code, qty: 1 }])
             store.DoOrder()
             msg = wait(0, port)
             if (type(msg) = "roChannelStoreEvent")
                 ProcessRoChannelStoreEvent(msg)
             end if
             transactions = msg.GetResponse()
-            for each transaction in transactions
-                m.syncPurchases({purchase: transaction})
-              end for
             return { transactions: transactions }
         end function,
         getAllPurchases: function() as object
