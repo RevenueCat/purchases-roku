@@ -206,13 +206,13 @@ function _PurchasesSDK(o as object) as object
     return {
         billing: billing,
         api: api,
-        _global: o.global,
-        saveConfig: function(config as Object) as Void
+        _global: global,
+        saveConfig: function(config as object) as void
             section = createObject("roRegistrySection", "RevenueCatConfig")
             section.write("Config", formatJson(config))
             section.flush()
         end function,
-        getConfig: function() as Object
+        getConfig: function() as object
             section = createObject("roRegistrySection", "RevenueCatConfig")
             if section.exists("Config")
                 try
