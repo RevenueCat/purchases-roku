@@ -1,5 +1,5 @@
 
-function purchasedTransaction() as object
+function purchasedTransactionFixture() as object
     return [
       {
         amount: "$0.00"
@@ -46,7 +46,7 @@ function purchasedTransaction() as object
     ]
   end function
 
-  function purchaseHistory() as object
+  function purchaseHistoryFixture() as object
     return [
       {
         code: "monthly_product"
@@ -226,7 +226,7 @@ function purchasedTransaction() as object
     ]
   end function
 
-  function catalog() as object
+  function catalogFixture() as object
     return [
       {
         code: "one_time_product"
@@ -315,7 +315,7 @@ function purchasedTransaction() as object
     ]
   end function
 
-  function subscriber(inputArgs = {}) as object
+  function subscriberFixture(inputArgs = {}) as object
     return {
       "request_date": "2024-05-12T15:52:31Z",
       "request_date_ms": 1715529151222,
@@ -334,7 +334,7 @@ function purchasedTransaction() as object
     }
   end function
 
-  function identify(inputArgs = {}) as object
+  function identifyFixture(inputArgs = {}) as object
     return {
       "request_date": "2024-05-12T15:53:53Z",
       "request_date_ms": 1715529233759,
@@ -391,7 +391,7 @@ function purchasedTransaction() as object
     }
   end function
 
-  function offerings(inputArgs = {}) as object
+  function offeringsFixture(inputArgs = {}) as object
     return {
       "current_offering_id": "roku",
       "offerings": [
