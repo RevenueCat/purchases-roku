@@ -9,7 +9,11 @@ function runTests() as void
   }
 
   results = roca(args).describe("Tests", sub(t)
-    customerInfoTests(t)
+    ' CustomerInfoTests(t)
+    ' ConfigurationTests(t)
+    ' OfferingsTests(t)
+    PurchaseTests(t)
+    ' ApiTester(t)
   end sub).__state.results
 
   if results.failed > 0 then

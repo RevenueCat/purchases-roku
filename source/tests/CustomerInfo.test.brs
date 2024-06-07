@@ -1,5 +1,5 @@
 function customerInfoTests(t)
-    t.describe("CustomerInfo tests", sub(t)
+    t.describe("CustomerInfo Tests", sub(t)
         t.beforeEach(sub(t)
             api = {
                 subscriber: subscriber
