@@ -256,7 +256,11 @@ function _PurchasesSDK(o as object) as object
             return {}
         end function,
         purchase: function(inputArgs = {}) as object
-            return m.billing.purchase(inputArgs)
+            transactions =  m.billing.purchase(inputArgs).transactions
+            return m.api.postReceipt({
+                userID: m.getConfig().userID,
+                purchase: transactions[0],
+            })
         end function,
         syncPurchases: function(inputArgs = {}) as object
             purchase = inputArgs.purchase
