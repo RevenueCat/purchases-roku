@@ -183,30 +183,17 @@ function _PurchasesSDK(o as object) as object
         end function,
         postReceipt: function(inputArgs = {}) as object
             purchase = inputArgs.purchase
+            app_user_id = inputArgs.userID
             _fetch({
-                url: "https://webhook.site/markrokureceipt"
+                url: m._urls.receipts,
                 headers: m.headers(),
                 method: "POST",
                 body: FormatJson({
-                    code: purchase.code,
-                    cost: purchase.cost,
-                    description: purchase.description,
-                    expirationDate: purchase.expirationDate
-                    freeTrialQuantity: purchase.freeTrialQuantity,
-                    freeTrialType: purchase.freeTrialType,
-                    inDunning: purchase.inDunning,
-                    name: purchase.name,
-                    productType: purchase.productType,
-                    purchaseChannel: purchase.purchaseChannel,
-                    purchaseContext: purchase.purchaseContext,
-                    purchaseDate: purchase.purchaseDate,
-                    purchaseId: purchase.purchaseId,
-                    qty: purchase.qty,
-                    renewalDate: purchase.renewalDate,
-                    status: purchase.status,
-                    trialCost: purchase.trialCost,
-                    trialQuantity: purchase.trialQuantity,
-                    trialType: purchase.trialType,
+                    fetch_token: purchase.purchaseId,
+                    app_user_id: app_user_id,
+                    product_id: purchase.code,
+                    price: purchase.amount,
+                    currency: "USD",
                 })
             })
         end function,
