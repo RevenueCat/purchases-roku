@@ -24,14 +24,8 @@ function Purchases() as object
             logOut: sub(callbackFunc = invalid as dynamic)
                 m._invoke("logOut", {}, callbackFunc)
             end sub,
-            setAttributes: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
-                m._invoke("setAttributes", inputArgs, callbackFunc)
-            end sub,
             getCustomerInfo: sub(callbackFunc = invalid as dynamic)
                 m._invoke("getCustomerInfo", {}, callbackFunc)
-            end sub,
-            syncPurchases: sub(callbackFunc = invalid as dynamic)
-                m._invoke("syncPurchases", callbackFunc)
             end sub,
             getOfferings: sub(callbackFunc = invalid as dynamic)
                 m._invoke("getOfferings", {}, callbackFunc)
@@ -410,10 +404,6 @@ function _PurchasesSDK(o = {} as object) as object
         getCustomerInfo: function(inputArgs = {}) as object
             return m.api.subscriber({ userId: m.getUserID() })
         end function,
-        setAttributes: function(inputArgs = {}) as object
-            print("setAttributes")
-            return {}
-        end function,
         purchase: function(inputArgs = {}) as object
             code = ""
             valueType = type(inputArgs)
@@ -454,30 +444,6 @@ function _PurchasesSDK(o = {} as object) as object
                     subscriber: result.data
                 }
             }
-        end function,
-        syncPurchases: function(inputArgs = {}) as object
-            result = m.billing.getAllPurchases()
-
-            if result.error <> invalid
-                return result
-            end if
-
-            transactions = result.data
-
-            for each transaction in transactions
-                print "transaction"; transaction
-                ' m.api.postReceipt({
-                '     userId: m.getUserID(),
-                '     purchase: transaction,
-                ' })
-            end for
-
-            ' purchase = inputArgs.purchase
-            ' m.api.postReceipt({
-            '     userId: m.getUserID(),
-            '     purchase: purchase,
-            ' })
-            return {}
         end function,
         getOfferings: function(inputArgs = {}) as object
             result = m.api.getOfferings({ userId: m.getUserID() })
