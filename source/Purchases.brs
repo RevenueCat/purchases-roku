@@ -338,14 +338,16 @@ end function
 
 function ProcessRoChannelStoreEvent(event as object) as void
     if event.isRequestSucceeded() then
-        print("Request success")
+        print("Store Request success")
         print(event.GetResponse())
     else if event.isRequestFailed() then
-        print("Request failure")
+        print("Store Request failure")
         print(event.GetStatus())
         print(event.GetStatusMessage())
     else if event.isRequestInterrupted() then
-        print("Request interrupted")
+        print("Store Request interrupted")
+        print(event.GetStatus())
+        print(event.GetStatusMessage())
     end if
 end function
 
