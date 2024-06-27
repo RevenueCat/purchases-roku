@@ -21,20 +21,20 @@ function Purchases() as object
             logIn: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
                 m._invoke("logIn", inputArgs, callbackFunc)
             end sub,
-            logOut: sub(inputArgs as object, callbackFunc = invalid as dynamic)
-                m._invoke("logOut", inputArgs, callbackFunc)
+            logOut: sub(callbackFunc = invalid as dynamic)
+                m._invoke("logOut", {}, callbackFunc)
             end sub,
             setAttributes: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
                 m._invoke("setAttributes", inputArgs, callbackFunc)
             end sub,
-            getCustomerInfo: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
-                m._invoke("getCustomerInfo", inputArgs, callbackFunc)
+            getCustomerInfo: sub(callbackFunc = invalid as dynamic)
+                m._invoke("getCustomerInfo", {}, callbackFunc)
             end sub,
-            syncPurchases: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
-                m._invoke("syncPurchases", inputArgs, callbackFunc)
+            syncPurchases: sub(callbackFunc = invalid as dynamic)
+                m._invoke("syncPurchases", callbackFunc)
             end sub,
-            getOfferings: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
-                m._invoke("getOfferings", inputArgs, callbackFunc)
+            getOfferings: sub(callbackFunc = invalid as dynamic)
+                m._invoke("getOfferings", {}, callbackFunc)
             end sub,
             _setCallbackID: function(callbackFunc as dynamic) as string
                 m._task.callbackID++
@@ -68,16 +68,23 @@ function Purchases() as object
 end function
 
 sub _invokeCallbackFunction(e as object)
-    m.context[e.getField()](e.getData())
+    data = e.getData()
+    m.context[e.getField()](data.data, data.error)
 end sub
 
-function _PurchasesSDK(o as object) as object
-    _baseURL = "https://api.revenuecat.com/v1/"
-
-    global = o.global
-    if global = invalid
-        global = {}
+function _PurchasesSDK(o = {} as object) as object
+    _internal_global = o.global
+    if _internal_global = invalid
+        _internal_global = {}
     end if
+
+    ERRORS = {
+        configurationError: {
+            message: "There is an issue with your configuration."
+            code: 23
+            codeName: "CONFIGURATION_ERROR"
+        }
+    }
 
     billing = {
         purchase: function(inputArgs = {}) as object
@@ -91,8 +98,24 @@ function _PurchasesSDK(o as object) as object
             if (type(msg) = "roChannelStoreEvent")
                 ProcessRoChannelStoreEvent(msg)
             end if
-            transactions = msg.GetResponse()
-            return { transactions: transactions }
+
+            if msg.isRequestSucceeded() then
+                return { data: msg.GetResponse() }
+            else if msg.isRequestFailed() then
+                return {
+                    error: {
+                        code: msg.GetStatus(),
+                        message: msg.GetStatusMessage(),
+                    }
+                }
+            else if msg.isRequestInterrupted() then
+                return {
+                    error: {
+                        code: msg.GetStatus(),
+                        message: msg.GetStatusMessage(),
+                    }
+                }
+            end if
         end function,
         getAllPurchases: function() as object
             port = CreateObject("roMessagePort")
@@ -103,8 +126,23 @@ function _PurchasesSDK(o as object) as object
             if (type(msg) = "roChannelStoreEvent")
                 ProcessRoChannelStoreEvent(msg)
             end if
-            transactions = msg.GetResponse()
-            return transactions
+            if msg.isRequestSucceeded() then
+                return { data: msg.GetResponse() }
+            else if msg.isRequestFailed() then
+                return {
+                    error: {
+                        code: msg.GetStatus(),
+                        message: msg.GetStatusMessage(),
+                    }
+                }
+            else if msg.isRequestInterrupted() then
+                return {
+                    error: {
+                        code: msg.GetStatus(),
+                        message: msg.GetStatusMessage(),
+                    }
+                }
+            end if
         end function,
         getProductsById: function() as object
             port = CreateObject("roMessagePort")
@@ -115,12 +153,28 @@ function _PurchasesSDK(o as object) as object
             if (type(msg) = "roChannelStoreEvent")
                 ProcessRoChannelStoreEvent(msg)
             end if
-            products = msg.GetResponse()
-            productsByID = {}
-            for each product in products
-                productsByID[product.code] = product
-            end for
-            return productsByID
+            if msg.isRequestSucceeded() then
+                products = msg.GetResponse()
+                productsByID = {}
+                for each product in products
+                    productsByID[product.code] = product
+                end for
+                return { data: productsByID }
+            else if msg.isRequestFailed() then
+                return {
+                    error: {
+                        code: msg.GetStatus(),
+                        message: msg.GetStatusMessage(),
+                    }
+                }
+            else if msg.isRequestInterrupted() then
+                return {
+                    error: {
+                        code: msg.GetStatus(),
+                        message: msg.GetStatusMessage(),
+                    }
+                }
+            end if
         end function,
     }
     if o.billing <> invalid then
@@ -128,7 +182,7 @@ function _PurchasesSDK(o as object) as object
     end if
 
     api = {
-        _global: o.global,
+        _global: _internal_global,
         _defaultHeaders: {
             "X-Platform-Flavor": "native",
             "X-Platform": "roku",
@@ -143,71 +197,131 @@ function _PurchasesSDK(o as object) as object
         }
         headers: function() as object
             headers = {
-                "Authorization": "Bearer " + m._global.revenueCatSDKConfig.api_key,
+                "Authorization": "Bearer " + m._global.revenueCatSDKConfig.apiKey,
                 "Content-Type": "application/json",
             }
             headers.Append(m._defaultHeaders)
             return headers
         end function,
-        _urls: {
-            subscribers: _baseURL + "subscribers/",
-            identify: _baseURL + "subscribers/identify/",
-            receipts: _baseURL + "receipts/",
-        },
+        getBaseUrl: function() as string
+            proxyUrl = m._global.revenueCatSDKConfig.proxyUrl
+            if proxyUrl <> invalid then return proxyUrl
+            return "https://api.revenuecat.com/v1/"
+        end function,
+        urls: function() as object
+            return {
+                subscribers: m.getBaseUrl() + "subscribers/",
+                identify: m.getBaseUrl() + "subscribers/identify",
+                receipts: m.getBaseUrl() + "receipts",
+            }
+        end function,
         getOfferings: function(inputArgs = {}) as object
-
             result = _fetch({
-                url: m._urls.subscribers + inputArgs.userID + "/offerings",
+                url: m.urls().subscribers + inputArgs.userId + "/offerings",
                 headers: m.headers(),
                 method: "GET"
             })
-            return result.json()
+            if result.ok
+                return {
+                    data: result.json()
+                }
+            else
+                return {
+                    error: result.json()
+                }
+            end if
         end function,
         identify: function(inputArgs = {}) as object
-            return _fetch({
-                url: m._urls.identify,
+            result = _fetch({
+                url: m.urls().identify,
                 headers: m.headers(),
                 method: "POST",
                 body: FormatJson({
-                    "app_user_id": inputArgs,
-                    "new_app_user_id": inputArgs,
+                    "app_user_id": inputArgs.userId,
+                    "new_app_user_id": inputArgs.newUserId,
                 })
             })
+            if result.ok
+                return {
+                    data: result.json().subscriber
+                }
+            else
+                return {
+                    error: result.json()
+                }
+            end if
         end function,
         subscriber: function(inputArgs = {}) as object
             result = _fetch({
-                url: m._urls.subscribers + inputArgs.userID,
+                url: m.urls().subscribers + inputArgs.userId,
                 headers: m.headers(),
                 method: "GET"
             })
+            if result.ok
+                return {
+                    data: result.json().subscriber
+                }
+            else
+                return {
+                    error: result.json()
+                }
+            end if
         end function,
         postReceipt: function(inputArgs = {}) as object
-            purchase = inputArgs.purchase
-            app_user_id = inputArgs.userID
-            _fetch({
-                url: m._urls.receipts,
+            transaction = inputArgs.transaction
+            app_user_id = inputArgs.userId
+            result = _fetch({
+                url: m.urls().receipts,
                 headers: m.headers(),
                 method: "POST",
                 body: FormatJson({
-                    fetch_token: purchase.purchaseId,
+                    fetch_token: transaction.purchaseId,
                     app_user_id: app_user_id,
-                    product_id: purchase.code,
-                    price: purchase.amount,
+                    product_id: transaction.code,
+                    price: transaction.amount,
                     currency: "USD",
                 })
             })
+            if result.ok
+                return {
+                    data: result.json().subscriber
+                }
+            else
+                return {
+                    error: result.json()
+                }
+            end if
         end function,
-
     }
     if o.api <> invalid then
         api = o.api
     end if
 
+    log = {
+        error: function(message as string) as void
+            print("😿‼️  Error: " + message)
+        end function,
+        info: function(message as string) as void
+            print("ℹ️  Info: " + message)
+        end function,
+        warning: function(message as string) as void
+            print("⚠️  Warning: " + message)
+        end function,
+    }
+
     return {
+        log: log,
+        errors: ERRORS,
         billing: billing,
         api: api,
-        _global: global,
-        saveConfig: function(config as object) as void
+        _global: _internal_global,
+        saveConfig: function(newConfig as object) as void
+            config = m.getConfig()
+            if config <> invalid
+                for each key in newConfig
+                    config[key] = newConfig[key]
+                end for
+            end if
             section = createObject("roRegistrySection", "RevenueCatConfig")
             section.write("Config", formatJson(config))
             section.flush()
@@ -235,51 +349,157 @@ function _PurchasesSDK(o as object) as object
         getOfferingsCache: function() as object
             ' read offerings from disk cache if not stale
         end function,
-        configure: function(inputArgs = {}) as object
-            m._global.revenueCatSDKConfig = inputArgs
-            return {}
+        setUserId: function(userId as string) as void
+            m.saveConfig({ userId: userId })
         end function,
-        logIn: function(inputArgs = {}) as object
-            m.saveConfig({ userID: inputArgs })
-            result = m.api.identify(inputArgs)
-            return {}
+        getUserId: function() as string
+            config = m.getConfig()
+            if config <> invalid and config.userId <> invalid then return config.userId
+            anonUserID = m.generateAnonUserId()
+            m.saveConfig({ userId: anonUserId })
+            return anonUserID
+        end function,
+        generateAnonUserId: function() as string
+            r = CreateObject("roRegex", "-", "i")
+            uuid = r.ReplaceAll(LCase(createObject("roDeviceInfo").getRandomUUID()), "")
+            return "$RCAnonymousID:" + uuid
+        end function,
+        configure: function(inputArgs = {}) as object
+            if inputArgs.apiKey = invalid then
+                m.log.error("Missing apiKey in configuration")
+                return {
+                    error: m.errors.configurationError
+                }
+            end if
+            m._global.revenueCatSDKConfig = inputArgs
+            return {
+                data: {
+                    apiKey: inputArgs.apiKey
+                }
+            }
+        end function,
+        logIn: function(userId as string) as object
+            if userId = invalid
+                m.log.error("Missing userId in logIn")
+                return {
+                    error: m.errors.configurationError
+                }
+            end if
+            valueType = type(userId)
+            if valueType <> "roString" and valueType <> "String" then
+                m.log.error("Invalid userId in logIn")
+                return {
+                    error: m.errors.configurationError
+                }
+            end if
+            currentUserID = m.getUserID()
+            if userId = currentUserID
+                m.log.info("User already logged in")
+                return m.getCustomerInfo()
+            end if
+            m.setUserId(userId)
+            return m.api.identify({
+                userId: currentUserID
+                newUserId: userId
+            })
         end function,
         logOut: function(inputArgs = {}) as object
-            result = m.api.identify("anon_user")
-            return {}
+            anonUserID = m.generateAnonUserID()
+            return m.api.identify(anonUserID)
         end function,
         getCustomerInfo: function(inputArgs = {}) as object
-            return m.api.subscriber({ userID: m.getConfig().userID })
+            return m.api.subscriber({ userId: m.getUserID() })
         end function,
         setAttributes: function(inputArgs = {}) as object
             print("setAttributes")
             return {}
         end function,
         purchase: function(inputArgs = {}) as object
-            transactions =  m.billing.purchase(inputArgs).transactions
-            return m.api.postReceipt({
-                userID: m.getConfig().userID,
-                purchase: transactions[0],
+            code = ""
+            valueType = type(inputArgs)
+            if inputArgs.code <> invalid
+                code = inputArgs.code
+            else if inputArgs.storeProduct <> invalid and inputArgs.storeProduct.code <> invalid
+                code = inputArgs.storeProduct.code
+            else if valueType = "roString" or valueType = "String"
+                code = inputArgs
+            end if
+            if code = "" then
+                m.log.error("Ivalid product identifier in purchase")
+                return {
+                    error: m.errors.configurationError
+                }
+            end if
+            result = m.billing.purchase({ code: code })
+
+            if result.error <> invalid
+                if result.error.code = 2
+                    result.data = { userCancelled: true }
+                end if
+                return result
+            end if
+
+            transactions = result.data
+
+            result = m.api.postReceipt({
+                userId: m.getUserID(),
+                transaction: transactions[0],
             })
+            if result.error <> invalid
+                return result
+            end if
+            return {
+                data: {
+                    transaction: transactions[0],
+                    subscriber: result.data
+                }
+            }
         end function,
         syncPurchases: function(inputArgs = {}) as object
-            purchase = inputArgs.purchase
-            m.api.postReceipt({
-                userID: m.getConfig().userID,
-                purchase: purchase,
-            })
+            result = m.billing.getAllPurchases()
+
+            if result.error <> invalid
+                return result
+            end if
+
+            transactions = result.data
+
+            for each transaction in transactions
+                print "transaction"; transaction
+                ' m.api.postReceipt({
+                '     userId: m.getUserID(),
+                '     purchase: transaction,
+                ' })
+            end for
+
+            ' purchase = inputArgs.purchase
+            ' m.api.postReceipt({
+            '     userId: m.getUserID(),
+            '     purchase: purchase,
+            ' })
             return {}
         end function,
         getOfferings: function(inputArgs = {}) as object
-            offerings = m.api.getOfferings({ userID: m.getConfig().userID })
+            result = m.api.getOfferings({ userId: m.getUserID() })
+            if result.error <> invalid
+                return result
+            end if
+            offerings = result.data
             current_offering_id = offerings.current_offering_id
             current_offering = invalid
             all_offerings = []
-            productsByID = m.billing.getProductsById()
+            result = m.billing.getProductsById()
+
+            if result.error <> invalid
+                return result
+            end if
+
+            productsByID = result.data
+
             for each offering in offerings.offerings
                 annual = invalid
                 monthly = invalid
-                packages = []
+                availablePackages = []
                 for each package in offering.packages
                     product = productsByID[package.platform_product_identifier]
                     if product = invalid then continue for
@@ -287,21 +507,21 @@ function _PurchasesSDK(o as object) as object
                         annual = {
                             identifier: package.identifier,
                             packageType: "annual"
-                            product: productsByID[package.platform_product_identifier],
+                            storeProduct: productsByID[package.platform_product_identifier],
                         }
-                        packages.push(annual)
+                        availablePackages.push(annual)
                     else if package.identifier = "$rc_monthly"
                         monthly = {
                             identifier: package.identifier,
                             packageType: "monthly"
-                            product: productsByID[package.platform_product_identifier],
+                            storeProduct: productsByID[package.platform_product_identifier],
                         }
-                        packages.push(monthly)
+                        availablePackages.push(monthly)
                     else
-                        packages.push({
+                        availablePackages.push({
                             identifier: package.identifier,
                             packageType: "custom"
-                            product: productsByID[package.platform_product_identifier],
+                            storeProduct: productsByID[package.platform_product_identifier],
                         })
                     end if
                 end for
@@ -311,7 +531,7 @@ function _PurchasesSDK(o as object) as object
                     description: offering.description,
                     annual: annual,
                     monthly: monthly,
-                    packages: packages,
+                    availablePackages: availablePackages,
                 }
                 all_offerings.push(o)
                 if offering.identifier = current_offering_id
@@ -319,14 +539,19 @@ function _PurchasesSDK(o as object) as object
                 end if
             end for
             return {
-                current: current_offering,
-                all: all_offerings,
+                data: {
+                    current: current_offering,
+                    all: all_offerings,
+                }
             }
         end function,
         invokeMethod: function(args) as void
             result = m[args.method](args.args)
             if result <> invalid then
                 callbackField = args.callbackID
+                print "callbackField: "; callbackField
+                print "method: "; args.method
+                print "result: "; result
                 m.task[callbackField] = result
                 m.task.unobserveField(callbackField)
                 m.task.removeField(callbackField)
