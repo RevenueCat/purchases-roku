@@ -358,6 +358,11 @@ function _PurchasesSDK(o = {} as object) as object
             uuid = r.ReplaceAll(LCase(createObject("roDeviceInfo").getRandomUUID()), "")
             return "$RCAnonymousID:" + uuid
         end function,
+        assertConfigured: function() as void
+            if m._global.revenueCatSDKConfig = invalid then
+                throw "Purchases SDK not configured"
+            end if
+        end function,
         configure: function(inputArgs = {}) as object
             if inputArgs.apiKey = invalid then
                 m.log.error("Missing apiKey in configuration")
@@ -373,6 +378,7 @@ function _PurchasesSDK(o = {} as object) as object
             }
         end function,
         logIn: function(userId as string) as object
+            m.assertConfigured()
             if userId = invalid
                 m.log.error("Missing userId in logIn")
                 return {
@@ -398,13 +404,16 @@ function _PurchasesSDK(o = {} as object) as object
             })
         end function,
         logOut: function(inputArgs = {}) as object
+            m.assertConfigured()
             anonUserID = m.generateAnonUserID()
             return m.api.identify(anonUserID)
         end function,
         getCustomerInfo: function(inputArgs = {}) as object
+            m.assertConfigured()
             return m.api.subscriber({ userId: m.getUserID() })
         end function,
         purchase: function(inputArgs = {}) as object
+            m.assertConfigured()
             code = ""
             valueType = type(inputArgs)
             if inputArgs.code <> invalid
@@ -446,6 +455,7 @@ function _PurchasesSDK(o = {} as object) as object
             }
         end function,
         getOfferings: function(inputArgs = {}) as object
+            m.assertConfigured()
             result = m.api.getOfferings({ userId: m.getUserID() })
             if result.error <> invalid
                 return result
