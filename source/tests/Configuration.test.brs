@@ -17,7 +17,7 @@ function ConfigurationTests(t)
 
         t.it("Throws assertion if used before configuring", sub(t)
             try
-            result = _PurchasesSDK().getOfferings()
+                result = _PurchasesSDK().getOfferings()
                 t.fail()
             catch e
                 t.assert.equal(e.message, "Purchases SDK not configured", "Unexpected error message")
@@ -28,6 +28,13 @@ function ConfigurationTests(t)
             result = _PurchasesSDK().configure({})
             t.assert.isValid(result.error, "Expected error")
             t.assert.isInvalid(result.data, "Unexpected data")
+        end sub)
+
+        t.it("Returns the correct value from isConfigured", sub(t)
+            p = _PurchasesSDK()
+            t.assert.isFalse(p.configuration.isConfigured(), "Expected not configured")
+            p.configure({ apiKey: Constants().TEST_API_KEY })
+            t.assert.isTrue(p.configuration.isConfigured(), "Expected configured")
         end sub)
     end sub)
 end function

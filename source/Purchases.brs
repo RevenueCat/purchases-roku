@@ -11,14 +11,15 @@ function Purchases() as object
         end if
         m.context = {}
         GetGlobalAA().rc_purchasesSingleton = {
-            _context: m.context,
-            _global: m.global,
             purchase: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
                 m._invoke("purchase", inputArgs, callbackFunc)
             end sub,
             configure: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
                 m._invoke("configure", inputArgs, callbackFunc)
             end sub,
+            isConfigured: function() as boolean
+                return m._internalConfiguration.isConfigured()
+            end function,
             logIn: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
                 m._invoke("logIn", inputArgs, callbackFunc)
             end sub,
@@ -31,6 +32,8 @@ function Purchases() as object
             getOfferings: sub(callbackFunc = invalid as dynamic)
                 m._invoke("getOfferings", {}, callbackFunc)
             end sub,
+            _internalConfiguration: _InternalPurchasesConfiguration({ global: m.global }),
+            _context: m.context,
             _setCallbackID: function(callbackFunc as dynamic) as string
                 m._task.callbackID++
                 if (m._task.callbackID >= 100000) then
@@ -66,6 +69,26 @@ sub _invokeCallbackFunction(e as object)
     data = e.getData()
     m.context[e.getField()](data.data, data.error)
 end sub
+
+function _InternalPurchasesConfiguration(o = {} as object) as object
+    return {
+        _global: o.global,
+        get: function() as object
+            return m._global.revenueCatSDKConfig
+        end function,
+        set: function(newConfig as object) as void
+            m._global.revenueCatSDKConfig = newConfig
+        end function,
+        assert: function() as void
+            if m.get() = invalid then
+                throw "Purchases SDK not configured"
+            end if
+        end function,
+        isConfigured: function() as boolean
+            return m.get() <> invalid
+        end function,
+    }
+end function
 
 function _PurchasesSDK(o = {} as object) as object
     _internal_global = o.global
@@ -176,8 +199,36 @@ function _PurchasesSDK(o = {} as object) as object
         billing = o.billing
     end if
 
+    registry = {
+        set: function(newEntries as object) as void
+            entries = m.get()
+            if entries <> invalid
+                for each key in newEntries
+                    entries[key] = newEntries[key]
+                end for
+            end if
+            section = createObject("roRegistrySection", "RevenueCat")
+            section.write("Storage", formatJson(entries))
+            section.flush()
+        end function,
+        get: function() as object
+            section = createObject("roRegistrySection", "RevenueCat")
+            if section.exists("Storage")
+                try
+                    entries = parseJson(section.read("Storage"))
+                catch e
+                    print("Failed to read registry:" + e.message)
+                end try
+                if type(entries) = "roAssociativeArray" then return entries
+            end if
+        end function,
+        clear: function() as void
+            section = createObject("roRegistrySection", "RevenueCat")
+            section.delete("Storage")
+        end function,
+    }
+
     api = {
-        _global: _internal_global,
         _defaultHeaders: {
             "X-Platform-Flavor": "native",
             "X-Platform": "roku",
@@ -190,16 +241,17 @@ function _PurchasesSDK(o = {} as object) as object
             "X-Storefront": "ESP",
             "X-Is-Sandbox": "true",
         }
+        configuration: _InternalPurchasesConfiguration({ global: _internal_global }),
         headers: function() as object
             headers = {
-                "Authorization": "Bearer " + m._global.revenueCatSDKConfig.apiKey,
+                "Authorization": "Bearer " + m.configuration.get().apiKey,
                 "Content-Type": "application/json",
             }
             headers.Append(m._defaultHeaders)
             return headers
         end function,
         getBaseUrl: function() as string
-            proxyUrl = m._global.revenueCatSDKConfig.proxyUrl
+            proxyUrl = m.configuration.get().proxyUrl
             if proxyUrl <> invalid then return proxyUrl
             return "https://api.revenuecat.com/v1/"
         end function,
@@ -309,29 +361,8 @@ function _PurchasesSDK(o = {} as object) as object
         errors: ERRORS,
         billing: billing,
         api: api,
-        _global: _internal_global,
-        saveConfig: function(newConfig as object) as void
-            config = m.getConfig()
-            if config <> invalid
-                for each key in newConfig
-                    config[key] = newConfig[key]
-                end for
-            end if
-            section = createObject("roRegistrySection", "RevenueCatConfig")
-            section.write("Config", formatJson(config))
-            section.flush()
-        end function,
-        getConfig: function() as object
-            section = createObject("roRegistrySection", "RevenueCatConfig")
-            if section.exists("Config")
-                try
-                    config = parseJson(section.read("Config"))
-                catch e
-                    print("Failed to read config:" + e.message)
-                end try
-                if type(config) = "roAssociativeArray" then return config
-            end if
-        end function,
+        registry: registry,
+        configuration: _InternalPurchasesConfiguration({ global: _internal_global }),
         updateCustomerCache: function(customer as object) as void
             ' save customer info to disk cache
         end function,
@@ -345,24 +376,19 @@ function _PurchasesSDK(o = {} as object) as object
             ' read offerings from disk cache if not stale
         end function,
         setUserId: function(userId as string) as void
-            m.saveConfig({ userId: userId })
+            m.registry.set({ userId: userId })
         end function,
         getUserId: function() as string
-            config = m.getConfig()
-            if config <> invalid and config.userId <> invalid then return config.userId
+            entries = m.registry.get()
+            if entries <> invalid and entries.userId <> invalid then return entries.userId
             anonUserID = m.generateAnonUserId()
-            m.saveConfig({ userId: anonUserId })
+            m.registry.set({ userId: anonUserId })
             return anonUserID
         end function,
         generateAnonUserId: function() as string
             r = CreateObject("roRegex", "-", "i")
             uuid = r.ReplaceAll(LCase(createObject("roDeviceInfo").getRandomUUID()), "")
             return "$RCAnonymousID:" + uuid
-        end function,
-        assertConfigured: function() as void
-            if m._global.revenueCatSDKConfig = invalid then
-                throw "Purchases SDK not configured"
-            end if
         end function,
         configure: function(inputArgs = {}) as object
             if inputArgs.apiKey = invalid then
@@ -371,7 +397,7 @@ function _PurchasesSDK(o = {} as object) as object
                     error: m.errors.configurationError
                 }
             end if
-            m._global.revenueCatSDKConfig = inputArgs
+            m.configuration.set(inputArgs)
             return {
                 data: {
                     apiKey: inputArgs.apiKey
@@ -379,7 +405,7 @@ function _PurchasesSDK(o = {} as object) as object
             }
         end function,
         logIn: function(userId as string) as object
-            m.assertConfigured()
+            m.configuration.assert()
             if userId = invalid
                 m.log.error("Missing userId in logIn")
                 return {
@@ -405,16 +431,16 @@ function _PurchasesSDK(o = {} as object) as object
             })
         end function,
         logOut: function(inputArgs = {}) as object
-            m.assertConfigured()
+            m.configuration.assert()
             anonUserID = m.generateAnonUserID()
             return m.api.identify(anonUserID)
         end function,
         getCustomerInfo: function(inputArgs = {}) as object
-            m.assertConfigured()
+            m.configuration.assert()
             return m.api.subscriber({ userId: m.getUserID() })
         end function,
         purchase: function(inputArgs = {}) as object
-            m.assertConfigured()
+            m.configuration.assert()
             code = ""
             valueType = type(inputArgs)
             if inputArgs.code <> invalid
@@ -456,7 +482,7 @@ function _PurchasesSDK(o = {} as object) as object
             }
         end function,
         getOfferings: function(inputArgs = {}) as object
-            m.assertConfigured()
+            m.configuration.assert()
             result = m.api.getOfferings({ userId: m.getUserID() })
             if result.error <> invalid
                 return result
