@@ -33,7 +33,7 @@ end function
 
 function onKeyEvent(key as string, press as boolean) as boolean
     Purchases().getOfferings({}, sub (e)
-      print "Offerings Main Scene"
+        print "Offerings Main Scene"
     end sub)
     handled = false
     if press

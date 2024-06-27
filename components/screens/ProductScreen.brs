@@ -1,14 +1,14 @@
 '********** Copyright 2020 Roku Corp.  All Rights Reserved. **********
 
 sub init()
-    m.top.observeField("orders", "startAsyncDoOrder")  'startAsyncDoOrder in RPayUtils.brs'
+    m.top.observeField("orders", "startAsyncDoOrder") 'startAsyncDoOrder in RPayUtils.brs'
     m.top.observeField("groups", "onGroupsChange")
     m.top.observeField("result", "handleReturnFromOrder")
 
     m.dialogBox = CreateObject("roSGNode", "Dialog")
     m.dialogBox.id = "dialogBox"
     m.dialogBox.title = "Purchase Status Info"
-    m.dialogBox.observeField("buttonSelected","dismissdialog")
+    m.dialogBox.observeField("buttonSelected", "dismissdialog")
 
     ' this contains the products UI (RadioButtonList) for each product group'
     m.listProducts = []
@@ -43,14 +43,14 @@ sub init()
     ' Purchases().syncPurchases()
 end sub
 
-sub onMakePurchase(event as Object)
+sub onMakePurchase(event as object)
     print "onMakePurchase"
     print "event: "; event.getData()
 end sub
 
-sub onGetOfferings(event as Object)
-  print "onGetOfferings"
-  print "event: "; event.getData()
+sub onGetOfferings(event as object)
+    print "onGetOfferings"
+    print "event: "; event.getData()
 end sub
 
 function onGroupsChange(msg)
@@ -124,10 +124,10 @@ sub handleExtPurchaseListResponse(event)
 end sub
 
 sub handleReturnFromOrder(event)
-  m.top.visible = true
-  'print "Return - request list of purchases"
-  m.billing.observeField("purchaseList", "handlePurchaseListResponseAtReturnFromOrder")
-  m.billing.callFunc("getPurchaseList", {})
+    m.top.visible = true
+    'print "Return - request list of purchases"
+    m.billing.observeField("purchaseList", "handlePurchaseListResponseAtReturnFromOrder")
+    m.billing.callFunc("getPurchaseList", {})
 end sub
 
 sub handlePurchaseListResponseAtReturnFromOrder(event)
@@ -144,24 +144,24 @@ sub handlePurchaseListResponseAtReturnFromOrder(event)
     m.billing.callFunc("getExtPurchaseList", {})
 end sub
 
-function getFloatCost(cost as String) as Float
+function getFloatCost(cost as string) as float
     length = cost.len()
     ' skip the currency symbol'
-    return mid(cost,2,length).toFloat()
+    return mid(cost, 2, length).toFloat()
 end function
 
 sub createCatalog(catalogData as object) as object
     catalog = {}
     for each item in catalogData.Items()
-      'print "catalog key= "; item.key
-      data = {}
-      pInfoText = setupProductInfoText(item.key, item.value, invalid)
-      data.name = item.value.name
-      data.code = item.value.code
-      data.cost = getFloatCost(item.value.cost)
-      ''? "cost= "; data.cost
-      data.pInfoText = pInfoText
-      catalog.addReplace(item.key, data)
+        'print "catalog key= "; item.key
+        data = {}
+        pInfoText = setupProductInfoText(item.key, item.value, invalid)
+        data.name = item.value.name
+        data.code = item.value.code
+        data.cost = getFloatCost(item.value.cost)
+        ''? "cost= "; data.cost
+        data.pInfoText = pInfoText
+        catalog.addReplace(item.key, data)
     end for
 
     return catalog
@@ -171,14 +171,14 @@ sub createActivePurchases(purchaseData as object) as object
     purchases = {}
     ' Expect only one active purchase'
     for each productCode in purchaseData
-      ' print "purchases key= "; productCode
+        ' print "purchases key= "; productCode
 
-      data = {}
-      data.renewalDate = purchaseData[productCode].renewalDate
-      data.expirationDate = purchaseData[productCode].expirationDate
-      data.status = "Active"
-      data.cost = purchaseData[productCode].cost
-      purchases.addReplace(productCode, data)
+        data = {}
+        data.renewalDate = purchaseData[productCode].renewalDate
+        data.expirationDate = purchaseData[productCode].expirationDate
+        data.status = "Active"
+        data.cost = purchaseData[productCode].cost
+        purchases.addReplace(productCode, data)
     end for
 
     return purchases
@@ -187,10 +187,10 @@ end sub
 sub getActivePurchase(purchaseData as object) as string
     result = ""
     for each item in purchaseData
-      if purchaseData[item].status = "Active"
-        result = item
-        exit for
-      end if
+        if purchaseData[item].status = "Active"
+            result = item
+            exit for
+        end if
     end for
 
     return result
@@ -200,35 +200,33 @@ sub updatePurchases(purchaseData as object, activeProductCode as string) as obje
     ' print "calling updatePurchases()"
     purchases = {}
     for each productCode in purchaseData
-      ' Purchases().syncPurchases({"purchase":purchaseData[productCode]})
-
-      data = {}
-      data.renewalDate = purchaseData[productCode].renewalDate
-      data.expirationDate = purchaseData[productCode].expirationDate
-      data.cost = purchaseData[productCode].cost
-      ' print "productCode= "; productCode
-      if productCode = activeProductCode
-        data.status = "Active"
-      else
-        if data.renewalDate = ""
-          data.status = "Cancelled"
+        data = {}
+        data.renewalDate = purchaseData[productCode].renewalDate
+        data.expirationDate = purchaseData[productCode].expirationDate
+        data.cost = purchaseData[productCode].cost
+        ' print "productCode= "; productCode
+        if productCode = activeProductCode
+            data.status = "Active"
         else
-          data.status = "Pending Active"
+            if data.renewalDate = ""
+                data.status = "Cancelled"
+            else
+                data.status = "Pending Active"
+            end if
         end if
-      end if
-      purchases.addReplace(productCode, data)
+        purchases.addReplace(productCode, data)
     end for
 
     return purchases
 end sub
 
 sub updateProductInfoText(catalogData, purchases)
-  for each item in m.catalog.Items()
-    purchasedItem = purchases[item.key]
-    productItem = catalogData[item.key]
-    pInfoText = setupProductInfoText(item.key, productItem, purchasedItem)
-    m.catalog[item.key].pInfoText = pInfoText
-  end for
+    for each item in m.catalog.Items()
+        purchasedItem = purchases[item.key]
+        productItem = catalogData[item.key]
+        pInfoText = setupProductInfoText(item.key, productItem, purchasedItem)
+        m.catalog[item.key].pInfoText = pInfoText
+    end for
 end sub
 
 ' Setup label list on the left side with commands
@@ -250,7 +248,7 @@ end sub
 ' Setup list of products in the middle panel, one for each group'
 sub setupProductLists(groups, groupNames, catalog)
     'config.json has only one group - Subscriptions'
-    for i=0 to groupNames.count()-1
+    for i = 0 to groupNames.count() - 1
         ' this is the parent content node for checkboxlist, one per product group'
         radioButtonListContent = createObject("roSGNode", "ContentNode")
         'name = groupNames[i]
@@ -273,7 +271,7 @@ sub setupProductLists(groups, groupNames, catalog)
 end sub
 
 ' Add new product to the radio button List'
-sub addRadioButtonListItem(label as String, productCode as String, rootNode as Object)
+sub addRadioButtonListItem(label as string, productCode as string, rootNode as object)
     RadioButtonListItemNode = createObject("RoSGNode", "ContentNode")
     radioButtonListItemNode.id = productCode
     radioButtonListItemNode.title = label
@@ -281,65 +279,65 @@ sub addRadioButtonListItem(label as String, productCode as String, rootNode as O
 end sub
 
 ' Add new command to the label List'
-sub addToCommandListItem(label as String, rootNode as Object)
-  listItemNode = createObject("RoSGNode", "ContentNode")
-  listItemNode.title = label
-  rootNode.AppendChild(listItemNode)
+sub addToCommandListItem(label as string, rootNode as object)
+    listItemNode = createObject("RoSGNode", "ContentNode")
+    listItemNode.title = label
+    rootNode.AppendChild(listItemNode)
 end sub
 
 ' Get the item purchased (if any) in each group. '
 function getPurchasedItem()
-  ' first get plans from m.purchases'
-  ret = -1
-  productsList = m.listProducts[0].content
-  purchasesList = []
-  ''? "productsList= "; productsList
+    ' first get plans from m.purchases'
+    ret = -1
+    productsList = m.listProducts[0].content
+    purchasesList = []
+    ''? "productsList= "; productsList
 
-  'for each item in m.purchases.items()
-  for each key in m.purchases
-      if m.purchases[key].status = "Active"
-        purchasesList.push(key)
-      end if
-  end for
-  'print "purchasesList= "; purchasesList
+    'for each item in m.purchases.items()
+    for each key in m.purchases
+        if m.purchases[key].status = "Active"
+            purchasesList.push(key)
+        end if
+    end for
+    'print "purchasesList= "; purchasesList
 
-  if purchasesList.count() > 1
-      print "Warning: two or more purchases on a group"
-      print purchasesList
-  else if purchasesList.count() = 1
-      ' first get plans from m.purchases'
-      purchasedId = purchasesList[0]
+    if purchasesList.count() > 1
+        print "Warning: two or more purchases on a group"
+        print purchasesList
+    else if purchasesList.count() = 1
+        ' first get plans from m.purchases'
+        purchasedId = purchasesList[0]
 
-      for i=0 to productsList.getChildCount() - 1
-          productId = productsList.getChild(i).id
-          if productId = purchasedId
-              ret = i
-              exit for
-          end if
-      end for
-  end if
-  return ret
+        for i = 0 to productsList.getChildCount() - 1
+            productId = productsList.getChild(i).id
+            if productId = purchasedId
+                ret = i
+                exit for
+            end if
+        end for
+    end if
+    return ret
 end function
 
 function getProductListIndex(groupName)
-  ret = -1
-  for i=0 to listNames.count()-1
-    if groupName = listNames[i]
-      ret = i
-      exit for
-    end if
-  end for
-  return ret
+    ret = -1
+    for i = 0 to listNames.count() - 1
+        if groupName = listNames[i]
+            ret = i
+            exit for
+        end if
+    end for
+    return ret
 end function
 
 ' Callback for when the command list is focused '
-sub onCommandItemFocused(msg as Object)
+sub onCommandItemFocused(msg as object)
     index = msg.getData()
     ''? "index = "; index; " is in focus"
-    if index = 0   ' 0 is special home screen item'
+    if index = 0 ' 0 is special home screen item'
         m.homeScreen.visible = true
         ? "Home screen is in focus"
-        for i=0 to m.listNames.count()-1
+        for i = 0 to m.listNames.count() - 1
             m.listProducts[i].visible = false
         end for
         if m.productInfoText <> invalid
@@ -347,11 +345,11 @@ sub onCommandItemFocused(msg as Object)
         end if
     else if index = 1
         m.homeScreen.visible = false
-        ? "product group: "; m.listNames[index-1]; " is in focus"
-        for i=0 to m.listNames.count()-1
-            if i=index-1
+        ? "product group: "; m.listNames[index - 1]; " is in focus"
+        for i = 0 to m.listNames.count() - 1
+            if i = index - 1
                 m.listProducts[i].visible = true
-                m.listProductsItemInFocus = index-1
+                m.listProductsItemInFocus = index - 1
                 ' mark the purchased item in each group (if any)'
                 'groupName = m.listNames[i]
                 purchasedIndex = getPurchasedItem()
@@ -363,17 +361,17 @@ sub onCommandItemFocused(msg as Object)
             end if
         end for
     else if index > 1
-      m.homeScreen.visible = false
-      for i=0 to m.listNames.count()-1
-        m.listProducts[i].visible = false
-      end for
-      if m.productInfoText <> invalid
-          m.productInfoText.visible = false
-      end if
+        m.homeScreen.visible = false
+        for i = 0 to m.listNames.count() - 1
+            m.listProducts[i].visible = false
+        end for
+        if m.productInfoText <> invalid
+            m.productInfoText.visible = false
+        end if
     end if
 end sub
 
-sub onCommandItemSelected(msg as Object)
+sub onCommandItemSelected(msg as object)
 end sub
 
 ' Callback for an item in focus '
@@ -399,127 +397,127 @@ sub onProductSelected(msg)
     groupName = m.listNames[m.listProductsItemInFocus]
     purchasedIndex = getPurchasedItem()
     if purchasedIndex <> -1
-      purchasedId = m.listProducts[m.listProductsItemInFocus].content.getchild(purchasedIndex).id
-      purchasedName = m.listProducts[m.listProductsItemInFocus].content.getchild(purchasedIndex).TITLE
+        purchasedId = m.listProducts[m.listProductsItemInFocus].content.getchild(purchasedIndex).id
+        purchasedName = m.listProducts[m.listProductsItemInFocus].content.getchild(purchasedIndex).TITLE
     else
-      purchasedId = ""
-      purchasedName = ""
+        purchasedId = ""
+        purchasedName = ""
     end if
     ''? "purchasedId= "; purchasedId
     ''? "purchasedName="; purchasedName
 
     scene = m.top.getScene()
     ' if index = purchasedIndex or purchasedIndex = -1
-      'Purchase operation'
-      if purchasedName = productName
-      ' Display status dialog'
+    'Purchase operation'
+    if purchasedName = productName
+        ' Display status dialog'
         print "No operations are available on a product already purchased."
         m.dialogBox.message = "Error: " + chr(10) + "No operations are available, you already purchased this product."
         m.dialogBox.buttons = ["Dismiss"]
         scene.dialog = m.dialogBox
-      else
+    else
         'Switch to the purchase screen'
         purchaseScreen = scene.findNode("purchaseScreen")
         if purchaseScreen <> invalid
-          purchaseScreen.billing = m.billing
-          purchaseScreen.productCode = productCode
-          purchaseScreen.productName = productName
-          purchaseScreen.visible = true
+            purchaseScreen.billing = m.billing
+            purchaseScreen.productCode = productCode
+            purchaseScreen.productName = productName
+            purchaseScreen.visible = true
 
-          purchaseButton = purchaseScreen.findNode("purchaseButton")
-          purchaseButton.setFocus(true)
+            purchaseButton = purchaseScreen.findNode("purchaseButton")
+            purchaseButton.setFocus(true)
         else
-          print "Could not find the purchase screen!"
+            print "Could not find the purchase screen!"
         end if
-      end if
+    end if
 
-'     else  ' Upgrade/Downgrade operation'
-'       purchasedCost = getFloatCost(m.purchases[purchasedId].cost)
-'       if productCost > purchasedCost
-'         requestType = "Upgrade"
-'       else
-'         requestType = "Downgrade"
-'       end if
+    '     else  ' Upgrade/Downgrade operation'
+    '       purchasedCost = getFloatCost(m.purchases[purchasedId].cost)
+    '       if productCost > purchasedCost
+    '         requestType = "Upgrade"
+    '       else
+    '         requestType = "Downgrade"
+    '       end if
 
-'       ' Don't allow upgrade/downgrade if selected product is cancelled
-' #if blockBk2BkDownUpgrade
-'       if m.purchases[productId] <> invalid and m.purchases[productId].status = "Cancelled"
-'         ' Display status dialog'
-'         print "Upgrade/downgrade not allowed, only on next billing cycle"
-'         m.dialogBox.message = requestType + " error: " + chr(10) + "Operation not allowed until next billing cycle"
-'         m.dialogBox.buttons = ["Dismiss"]
-'         scene.dialog = m.dialogBox
-'       else
-' #else
-'       if 1
-' #end if
-'         ' Switch to the upgrade screen'
-'         upgradeScreen = scene.findNode("upgradeScreen")
-'         if upgradeScreen <> invalid
-'           'purchasedName = m.catalog[purchasedName].planName
-'           ''? "purchasedName= "; purchasedName
-'           'upgradeScreen.purchaseData = m.purchases[purchasedName]
-'           upgradeScreen.requestType = requestType
-'           upgradeScreen.billing = m.billing
-'           upgradeScreen.purchasedName = purchasedName
-'           upgradeScreen.productCode = productCode
-'           upgradeScreen.productName = productName
-'           upgradeScreen.visible = true
-'           upgradeButton = upgradeScreen.findNode("upgradeButton")
-'           upgradeButton.setFocus(true)
-'         else
-'           print "Could not find the upgrade screen!"
-'         end if
-'       end if
-'     end if
+    '       ' Don't allow upgrade/downgrade if selected product is cancelled
+    ' #if blockBk2BkDownUpgrade
+    '       if m.purchases[productId] <> invalid and m.purchases[productId].status = "Cancelled"
+    '         ' Display status dialog'
+    '         print "Upgrade/downgrade not allowed, only on next billing cycle"
+    '         m.dialogBox.message = requestType + " error: " + chr(10) + "Operation not allowed until next billing cycle"
+    '         m.dialogBox.buttons = ["Dismiss"]
+    '         scene.dialog = m.dialogBox
+    '       else
+    ' #else
+    '       if 1
+    ' #end if
+    '         ' Switch to the upgrade screen'
+    '         upgradeScreen = scene.findNode("upgradeScreen")
+    '         if upgradeScreen <> invalid
+    '           'purchasedName = m.catalog[purchasedName].planName
+    '           ''? "purchasedName= "; purchasedName
+    '           'upgradeScreen.purchaseData = m.purchases[purchasedName]
+    '           upgradeScreen.requestType = requestType
+    '           upgradeScreen.billing = m.billing
+    '           upgradeScreen.purchasedName = purchasedName
+    '           upgradeScreen.productCode = productCode
+    '           upgradeScreen.productName = productName
+    '           upgradeScreen.visible = true
+    '           upgradeButton = upgradeScreen.findNode("upgradeButton")
+    '           upgradeButton.setFocus(true)
+    '         else
+    '           print "Could not find the upgrade screen!"
+    '         end if
+    '       end if
+    '     end if
 end sub
 
 sub dismissdialog()
-  scene = m.top.getScene()
-  scene.dialog.close = true
-  m.top.result = {"ret": 0}
+    scene = m.top.getScene()
+    scene.dialog.close = true
+    m.top.result = { "ret": 0 }
 end sub
 
 ' This function sets up the product information left panel
 ' called in the product catalog creation'
 function setupProductInfoText(code, productData = {} as object, purchaseData = {} as object)
-  ' Get all info productData
+    ' Get all info productData
     text = "Product Info" + chr(10)
     text += "  Code: " + code + chr(10)
     text += "  Name: " + productData.name + chr(10)
     'productItem = m.products[name]
 
-    text += chr(10)   ' blank line'
+    text += chr(10) ' blank line'
     text += "Type" + chr(10)
     text += "  " + productData.productType + chr(10)
     text += "  Price: " + productData.cost + chr(10)
 
     if productData.trialType <> "None"
-      text += chr(10)   ' blank line'
-      text += "Trial period" + chr(10)
-      text += "  Duration: " + productData.trialQuantity.toStr()
-      text += " " + productData.trialType + chr(10)
+        text += chr(10) ' blank line'
+        text += "Trial period" + chr(10)
+        text += "  Duration: " + productData.trialQuantity.toStr()
+        text += " " + productData.trialType + chr(10)
     end if
 
     if purchaseData <> invalid
-      text += chr(10)   ' blank line'
-      text += "Additional info" + chr(10)
-      text += "  Status: " + purchaseData.Status + chr(10)
-      text += "  Expiration date: " + purchaseData.expirationDate
+        text += chr(10) ' blank line'
+        text += "Additional info" + chr(10)
+        text += "  Status: " + purchaseData.Status + chr(10)
+        text += "  Expiration date: " + purchaseData.expirationDate
     end if
 
     return text
 end function
 
 sub displayProductInfo(id)
-  item = m.catalog[id]
-  text = item.pInfoText
-  m.productInfoText.text = text
+    item = m.catalog[id]
+    text = item.pInfoText
+    m.productInfoText.text = text
 end sub
 
 function onKeyEvent(key as string, press as boolean) as boolean
     Purchases().getOfferings({}, sub (e)
-      print "Offerings Product Screen"
+        print "Offerings Product Screen"
     end sub)
     handled = false
     if press
@@ -532,10 +530,10 @@ function onKeyEvent(key as string, press as boolean) as boolean
         if key = "right"
             index = m.commandList.ItemFocused
             ' print "Item selected: ", stri(index)
-            if index = 0  ' Home
+            if index = 0 ' Home
                 ' print "Home screen has focus"
             else if index >= 1
-                m.listProducts[index-1].setFocus(true)
+                m.listProducts[index - 1].setFocus(true)
             end if
             handled = true
         end if

@@ -1,6 +1,6 @@
-Sub Init()
+sub Init()
     m.top.functionName = "ListenInput"
-End Sub
+end sub
 
 function ListenInput()
     port = CreateObject("romessageport")
@@ -10,7 +10,7 @@ function ListenInput()
     while true
         msg = port.WaitMessage(500)
 
-        if type(msg)="roInputEvent" then
+        if type(msg) = "roInputEvent" then
             if msg.isInput()
                 inputData = msg.getInfo()
                 print "InputEventTask : Input Event Data " inputData

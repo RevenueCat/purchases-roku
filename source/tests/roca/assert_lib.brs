@@ -117,7 +117,7 @@ function __formatError(error)
     ' Get the stack trace where the failed test is, filtering out any roca frames
     fileFilters = ["roca"]
     numStackFrames = 3
-    stack_frames = _brs_.getStackTrace(numStackFrames, fileFilters)
+    ' stack_frames = _brs_.getStackTrace(numStackFrames, fileFilters)
 
     error.expected = __asReadableValue(error.expected)
     error.actual = __asReadableValue(error.actual)
@@ -128,7 +128,7 @@ function __formatError(error)
             name: error.funcName,
             message: error.message,
             ' use snake case so we don't have to worry about case-sensitivity
-            stack_frames: stack_frames
+            ' stack_frames: stack_frames
         },
         wanted: error.expected,
         found: error.actual
@@ -267,7 +267,7 @@ function __roca_isFunction(value as dynamic) as boolean
 end function
 
 function __roca_isNumeric(value as dynamic) as boolean
-    return  __roca_isInteger(value) or __roca_isFloat(value) or __roca_isDouble(value)
+    return __roca_isInteger(value) or __roca_isFloat(value) or __roca_isDouble(value)
 end function
 
 function __roca_isRoSGNode(obj as dynamic) as boolean

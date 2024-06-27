@@ -1,4 +1,4 @@
-function ReadConfigFile(filename) as Object
+function ReadConfigFile(filename) as object
     configAA = {}
     configStr = ReadAsciiFile(filename)
     configAA = parseJson(configStr)
