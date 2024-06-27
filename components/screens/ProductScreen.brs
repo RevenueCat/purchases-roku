@@ -1,6 +1,40 @@
 '********** Copyright 2020 Roku Corp.  All Rights Reserved. **********
 
 sub init()
+    ' Initialise the SDK
+    Purchases().configure({
+        "apiKey": "roku_ltxwuCGexxpozfEKvNcnQKSpzmT",
+        ' "apiKey": "roku_rYIAQxwuNBGwZmldIjYahxSwHDk",
+        ' "proxyUrl": "http://192.168.1.34:8000/v1/",
+    })
+    ' Login the user
+    Purchases().logIn("mark_roku_test", sub(subscriber, error)
+        ' Get current offerings
+        if error = invalid
+            Purchases().getOfferings(sub(offerings, error)
+                print "offerings"; offerings.current
+                if error = invalid
+                    ' Purchase the annual product of the current offering
+                    if offerings.current <> invalid and offerings.current.annual <> invalid
+                        Purchases().purchase(offerings.current.annual, sub(result, error)
+                            if error = invalid
+                                print "Purchase successful"
+                                print result.transaction
+                                print result.subscriber
+                                print result
+                                print error
+                            else
+                                print "Purchase failed"
+                                print error
+                                print result
+                            end if
+                        end sub)
+                    end if
+                end if
+            end sub)
+        end if
+    end sub)
+
     m.top.observeField("orders", "startAsyncDoOrder") 'startAsyncDoOrder in RPayUtils.brs'
     m.top.observeField("groups", "onGroupsChange")
     m.top.observeField("result", "handleReturnFromOrder")
@@ -19,28 +53,6 @@ sub init()
 
     '  this contains the data coming from getPurchaseList'
     m.purchases = {}
-
-    Purchases().configure({ "api_key": "XXXXX" })
-    Purchases().logIn("user1", sub(e)
-      print "logIn callback"
-    end sub)
-    Purchases().logOut({}, sub(e)
-      print "logOut callback"
-    end sub)
-    ' Purchases().getOfferings({}, "onGetOfferings")
-    Purchases().getOfferings({}, sub(e)
-      print "getOfferings callback"; e
-      Purchases().purchase({ code: e.current.monthly.product.code, qty: 1 }, sub(e)
-        print "purchase callback"
-        for each transaction in e.transactions
-          print "transaction: "; transaction
-        end for
-      end sub)
-    end sub)
-    Purchases().getCustomerInfo({}, sub(e)
-      print "getCustomerInfo: "; e
-    end sub)
-    ' Purchases().syncPurchases()
 end sub
 
 sub onMakePurchase(event as object)
