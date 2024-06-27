@@ -1,9 +1,10 @@
 function Purchases() as object
     if GetGlobalAA().rc_purchasesSingleton = invalid then
-        print("Creating Purchases singleton")
+        if m.global = invalid then
+            throw "The RevenueCat SDK can only be called from SceneGraph components where the m.global object is available."
+        end if
         task = m.global.getScene().findNode("purchasesTask")
         if task = invalid then
-            print("Creating Purchases task")
             task = m.global.getScene().createChild("PurchasesTask")
             task.id = "purchasesTask"
             m.global.addFields({ revenueCatSDKConfig: {} })
