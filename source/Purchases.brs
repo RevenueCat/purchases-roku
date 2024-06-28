@@ -12,12 +12,17 @@ function Purchases() as object
             end if
         end if
         m.context = {}
+
+        configuration = _InternalPurchases_Configuration({ global: m.global })
+        log = _InternalPurchases_Logger({ configuration: configuration })
+        configuration.log = log
+
         GetGlobalAA().rc_purchasesSingleton = {
             purchase: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
                 m._internal.invoke("purchase", inputArgs, callbackFunc)
             end sub,
-            configure: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
-                m._internal.invoke("configure", inputArgs, callbackFunc)
+            configure: sub(inputArgs = {} as object)
+                m._internal.configuration.configure(inputArgs)
             end sub,
             isConfigured: function() as boolean
                 return m._internal.configuration.isConfigured()
@@ -49,7 +54,7 @@ function Purchases() as object
                 m._internal.invoke("getOfferings", {}, callbackFunc)
             end sub,
             _internal: {
-                configuration: _InternalPurchases_Configuration({ global: m.global }),
+                configuration: configuration,
                 callbackContext: m.context,
                 setCallbackID: function(callbackFunc as dynamic) as string
                     m.task.callbackID++
@@ -91,12 +96,23 @@ end sub
 function _InternalPurchases_Configuration(o = {} as object) as object
     return {
         _global: o.global,
+        log: o.log,
         get: function() as object
             if m._global.revenueCatSDKConfig = invalid then return {}
             return m._global.revenueCatSDKConfig
         end function,
-        set: function(newConfig as object) as void
-            m._global.revenueCatSDKConfig = newConfig
+        configure: function(config as object) as object
+            if config.apiKey = invalid then
+                m.log.error("Missing apiKey in configuration")
+            end if
+            m.set(config)
+        end function,
+        set: function(config as object) as void
+            m._global.revenueCatSDKConfig = {
+                apiKey: config.apiKey,
+                logLevel: config.logLevel,
+                proxyUrl: config.proxyUrl,
+            }
         end function,
         assert: function() as void
             if m.get().apiKey = invalid then
@@ -110,24 +126,9 @@ function _InternalPurchases_Configuration(o = {} as object) as object
     }
 end function
 
-function _InternalPurchases(o = {} as object) as object
-    _internal_global = o.global
-    if _internal_global = invalid
-        _internal_global = {}
-    end if
-
-    ERRORS = {
-        configurationError: {
-            message: "There is an issue with your configuration."
-            code: 23
-            codeName: "CONFIGURATION_ERROR"
-        }
-    }
-
-    configuration = _InternalPurchases_Configuration({ global: _internal_global })
-
-    log = {
-        configuration: configuration,
+function _InternalPurchases_Logger(o = {} as object) as object
+    return {
+        configuration: o.configuration,
         logLevel: function() as integer
             level = m.configuration.get().logLevel
             if level <> invalid and m.levels[level] <> invalid then return m.levels[level]
@@ -160,6 +161,25 @@ function _InternalPurchases(o = {} as object) as object
             return FormatJson(message)
         end function,
     }
+end function
+
+function _InternalPurchases(o = {} as object) as object
+    _internal_global = o.global
+    if _internal_global = invalid
+        _internal_global = {}
+    end if
+
+    ERRORS = {
+        configurationError: {
+            message: "There is an issue with your configuration."
+            code: 23
+            codeName: "CONFIGURATION_ERROR"
+        }
+    }
+
+    configuration = _InternalPurchases_Configuration({ global: _internal_global })
+    log = _InternalPurchases_Logger({ configuration: configuration })
+    configuration.log = log
 
     registry = {
         log: log,
@@ -450,20 +470,6 @@ function _InternalPurchases(o = {} as object) as object
             r = CreateObject("roRegex", "-", "i")
             uuid = r.ReplaceAll(LCase(createObject("roDeviceInfo").getRandomUUID()), "")
             return "$RCAnonymousID:" + uuid
-        end function,
-        configure: function(inputArgs = {}) as object
-            if inputArgs.apiKey = invalid then
-                m.log.error("Missing apiKey in configuration")
-                return {
-                    error: m.errors.configurationError
-                }
-            end if
-            m.configuration.set(inputArgs)
-            return {
-                data: {
-                    apiKey: inputArgs.apiKey
-                }
-            }
         end function,
         logIn: function(userId as string) as object
             m.configuration.assert()

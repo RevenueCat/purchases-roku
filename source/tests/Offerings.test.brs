@@ -12,7 +12,7 @@ function OfferingsTests(t)
                 end function
             }
             p = _InternalPurchases({ billing: billing })
-            p.configure({ apiKey: Constants().TEST_API_KEY })
+            p.configuration.configure({ apiKey: Constants().TEST_API_KEY })
             t.addContext({ purchases: p })
         end sub)
 
