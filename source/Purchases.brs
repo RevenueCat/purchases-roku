@@ -41,6 +41,12 @@ function Purchases() as object
                 if logLevel = invalid then return "info"
                 return logLevel
             end function,
+            isAnonymous: sub(callbackFunc = invalid as dynamic)
+                m._internal.invoke("isAnonymous", {}, callbackFunc)
+            end sub,
+            appUserId: sub(callbackFunc = invalid as dynamic)
+                m._internal.invoke("appUserId", {}, callbackFunc)
+            end sub,
             logIn: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
                 m._internal.invoke("logIn", inputArgs, callbackFunc)
             end sub,
@@ -459,12 +465,15 @@ function _InternalPurchases(o = {} as object) as object
         setUserId: function(userId as string) as void
             m.registry.set({ userId: userId })
         end function,
-        getUserId: function() as string
+        appUserId: function() as string
             entries = m.registry.get()
             if entries <> invalid and entries.userId <> invalid then return entries.userId
             anonUserID = m.generateAnonUserId()
             m.registry.set({ userId: anonUserId })
             return anonUserID
+        end function,
+        isAnonymous: function() as boolean
+            return m.appUserId().startsWith("$RCAnonymousID:")
         end function,
         generateAnonUserId: function() as string
             r = CreateObject("roRegex", "-", "i")
@@ -486,7 +495,7 @@ function _InternalPurchases(o = {} as object) as object
                     error: m.errors.configurationError
                 }
             end if
-            currentUserID = m.getUserID()
+            currentUserID = m.appUserId()
             if userId = currentUserID
                 m.log.info("User already logged in")
                 return m.getCustomerInfo()
@@ -499,12 +508,17 @@ function _InternalPurchases(o = {} as object) as object
         end function,
         logOut: function(inputArgs = {}) as object
             m.configuration.assert()
+            currentUserID = m.appUserId()
             anonUserID = m.generateAnonUserID()
-            return m.api.identify(anonUserID)
+            m.setUserId(anonUserID)
+            return m.api.identify({
+                userId: currentUserID
+                newUserId: anonUserID
+            })
         end function,
         getCustomerInfo: function(inputArgs = {}) as object
             m.configuration.assert()
-            return m.api.subscriber({ userId: m.getUserID() })
+            return m.api.subscriber({ userId: m.appUserId() })
         end function,
         purchase: function(inputArgs = {}) as object
             m.configuration.assert()
@@ -535,7 +549,7 @@ function _InternalPurchases(o = {} as object) as object
             transactions = result.data
 
             result = m.api.postReceipt({
-                userId: m.getUserID(),
+                userId: m.appUserId(),
                 transaction: transactions[0],
             })
             if result.error <> invalid
@@ -550,7 +564,7 @@ function _InternalPurchases(o = {} as object) as object
         end function,
         getOfferings: function(inputArgs = {}) as object
             m.configuration.assert()
-            result = m.api.getOfferings({ userId: m.getUserID() })
+            result = m.api.getOfferings({ userId: m.appUserId() })
             if result.error <> invalid
                 return result
             end if
