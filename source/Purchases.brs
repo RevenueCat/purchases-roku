@@ -12,85 +12,101 @@ function Purchases() as object
         m.context = {}
         GetGlobalAA().rc_purchasesSingleton = {
             purchase: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
-                m._invoke("purchase", inputArgs, callbackFunc)
+                m._internal.invoke("purchase", inputArgs, callbackFunc)
             end sub,
             configure: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
-                m._invoke("configure", inputArgs, callbackFunc)
+                m._internal.invoke("configure", inputArgs, callbackFunc)
             end sub,
             isConfigured: function() as boolean
-                return m._internalConfiguration.isConfigured()
+                return m._internal.configuration.isConfigured()
+            end function,
+            setProxyURL: sub(proxyURL as string)
+                m._internal.configuration.set({ proxyUrl: proxyURL })
+            end sub,
+            proxyURL: function() as string
+                return m._internal.configuration.get().proxyUrl
+            end function,
+            setLogLevel: sub(logLevel as string)
+                m._internal.configuration.set({ logLevel: logLevel })
+            end sub,
+            logLevel: function() as string
+                return m._internalConfiguration.get().logLevel
             end function,
             logIn: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
-                m._invoke("logIn", inputArgs, callbackFunc)
+                m._internal.invoke("logIn", inputArgs, callbackFunc)
             end sub,
             logOut: sub(callbackFunc = invalid as dynamic)
-                m._invoke("logOut", {}, callbackFunc)
+                m._internal.invoke("logOut", {}, callbackFunc)
             end sub,
             getCustomerInfo: sub(callbackFunc = invalid as dynamic)
-                m._invoke("getCustomerInfo", {}, callbackFunc)
+                m._internal.invoke("getCustomerInfo", {}, callbackFunc)
             end sub,
             getOfferings: sub(callbackFunc = invalid as dynamic)
-                m._invoke("getOfferings", {}, callbackFunc)
+                m._internal.invoke("getOfferings", {}, callbackFunc)
             end sub,
-            _internalConfiguration: _InternalPurchasesConfiguration({ global: m.global }),
-            _context: m.context,
-            _setCallbackID: function(callbackFunc as dynamic) as string
-                m._task.callbackID++
-                if (m._task.callbackID >= 100000) then
-                    m._task.callbackID = 1
-                end if
-                callbackID = m._task.callbackID.tostr()
-                m._task.addField(callbackID, "assocarray", false)
-                valueType = type(callbackFunc)
-                if valueType = "roFunction" or valueType = "Function" then
-                    m._task.observeField(callbackID, "_invokeCallbackFunction")
-                    m._context[callbackID] = callbackFunc
-                else if valueType = "roString" or valueType = "String" then
-                    m._task.observeField(callbackID, callbackFunc)
-                else
-                    m._task.observeField(callbackID, "")
-                end if
-                return callbackID
-            end function,
-            _invoke: function(name as string, inputArgs = {}, callbackFunc = invalid as dynamic)
-                m._task["api"] = {
-                    method: name,
-                    args: inputArgs,
-                    callbackID: m._setCallbackID(callbackFunc),
-                }
-            end function
-            _task: task,
+            _internal: {
+                configuration: _InternalPurchases_Configuration({ global: m.global }),
+                callbackContext: m.context,
+                setCallbackID: function(callbackFunc as dynamic) as string
+                    m.task.callbackID++
+                    if (m.task.callbackID >= 100000) then
+                        m.task.callbackID = 1
+                    end if
+                    callbackID = m.task.callbackID.tostr()
+                    m.task.addField(callbackID, "assocarray", false)
+                    valueType = type(callbackFunc)
+                    if valueType = "roFunction" or valueType = "Function" then
+                        m.task.observeField(callbackID, "_InternalPurchases_invokeCallbackFunction")
+                        m.callbackContext[callbackID] = callbackFunc
+                    else if valueType = "roString" or valueType = "String" then
+                        m.task.observeField(callbackID, callbackFunc)
+                    else
+                        m.task.observeField(callbackID, "")
+                    end if
+                    return callbackID
+                end function,
+                invoke: function(name as string, inputArgs = {}, callbackFunc = invalid as dynamic)
+                    m.task["api"] = {
+                        method: name,
+                        args: inputArgs,
+                        callbackID: m.setCallbackID(callbackFunc),
+                    }
+                end function
+                task: task,
+            }
         }
     end if
     return GetGlobalAA().rc_purchasesSingleton
 end function
 
-sub _invokeCallbackFunction(e as object)
+sub _InternalPurchases_invokeCallbackFunction(e as object)
     data = e.getData()
     m.context[e.getField()](data.data, data.error)
 end sub
 
-function _InternalPurchasesConfiguration(o = {} as object) as object
+function _InternalPurchases_Configuration(o = {} as object) as object
     return {
         _global: o.global,
         get: function() as object
+            if m._global.revenueCatSDKConfig = invalid then return {}
             return m._global.revenueCatSDKConfig
         end function,
         set: function(newConfig as object) as void
             m._global.revenueCatSDKConfig = newConfig
         end function,
         assert: function() as void
-            if m.get() = invalid then
+            if m.get().apiKey = invalid then
                 throw "Purchases SDK not configured"
             end if
         end function,
         isConfigured: function() as boolean
-            return m.get() <> invalid
+            if m.get().apiKey = invalid then return false
+            return true
         end function,
     }
 end function
 
-function _PurchasesSDK(o = {} as object) as object
+function _InternalPurchases(o = {} as object) as object
     _internal_global = o.global
     if _internal_global = invalid
         _internal_global = {}
@@ -104,7 +120,89 @@ function _PurchasesSDK(o = {} as object) as object
         }
     }
 
+    configuration = _InternalPurchases_Configuration({ global: _internal_global })
+
+    log = {
+        configuration: configuration,
+        logLevel: function() as integer
+            level = m.configuration.get().logLevel
+            if level <> invalid and m.levels[level] <> invalid then return m.levels[level]
+            return m.levels.info
+        end function,
+        levels: {
+            error: 3,
+            warn: 2,
+            info: 1,
+            debug: 0,
+        }
+        error: function(message) as void
+            if m.logLevel() > m.levels.error then return
+            print("😿‼️  Error: " + m.convertToString(message))
+        end function,
+        info: function(message) as void
+            if m.logLevel() > m.levels.info then return
+            print("ℹ️  Info: " + m.convertToString(message))
+        end function,
+        warn: function(message) as void
+            if m.logLevel() > m.levels.warn then return
+            print("⚠️  Warning: " + message)m.convertToString(message)
+        end function,
+        debug: function(message) as void
+            if m.logLevel() > m.levels.debug then return
+            print("🐞 Debug: " + m.convertToString(message))
+        end function,
+        convertToString: function(message) as string
+            if type(message) = "roString" or type(message) = "String" then return message
+            return FormatJson(message)
+        end function,
+    }
+
+    registry = {
+        log: log,
+        set: function(newEntries as object) as void
+            entries = m.get()
+            if entries <> invalid
+                for each key in newEntries
+                    entries[key] = newEntries[key]
+                end for
+            end if
+            section = createObject("roRegistrySection", "RevenueCat")
+            section.write("Storage", formatJson(entries))
+            section.flush()
+        end function,
+        get: function() as object
+            section = createObject("roRegistrySection", "RevenueCat")
+            if section.exists("Storage") = false then return {}
+            try
+                entries = parseJson(section.read("Storage"))
+            catch e
+                m.log.error("Failed to read registry:" + e.message)
+            end try
+            if type(entries) <> "roAssociativeArray" then return {}
+            return entries
+        end function,
+        clear: function() as void
+            section = createObject("roRegistrySection", "RevenueCat")
+            section.delete("Storage")
+        end function,
+    }
+
     billing = {
+        log: log,
+        logStoreEvent: function(event as object) as void
+            if event.isRequestSucceeded() then
+                m.log.debug("Store Request success")
+                m.log.debug(event.GetResponse())
+            else if event.isRequestFailed() then
+                m.log.debug("Store Request failure")
+                m.log.debug(event.GetStatus())
+                m.log.debug(event.GetStatusMessage())
+            else if event.isRequestInterrupted() then
+                m.log.debug("Store Request interrupted")
+                m.log.debug(event.GetStatus())
+                m.log.debug(event.GetStatusMessage())
+            end if
+        end function
         purchase: function(inputArgs = {}) as object
             port = CreateObject("roMessagePort")
             store = CreateObject("roChannelStore")
@@ -114,7 +212,7 @@ function _PurchasesSDK(o = {} as object) as object
             store.DoOrder()
             msg = wait(0, port)
             if (type(msg) = "roChannelStoreEvent")
-                ProcessRoChannelStoreEvent(msg)
+                m.logStoreEvent(msg)
             end if
 
             if msg.isRequestSucceeded() then
@@ -142,7 +240,7 @@ function _PurchasesSDK(o = {} as object) as object
             store.GetAllPurchases()
             msg = wait(0, port)
             if (type(msg) = "roChannelStoreEvent")
-                ProcessRoChannelStoreEvent(msg)
+                m.logStoreEvent(msg)
             end if
             if msg.isRequestSucceeded() then
                 return { data: msg.GetResponse() }
@@ -169,7 +267,7 @@ function _PurchasesSDK(o = {} as object) as object
             store.GetCatalog()
             msg = wait(0, port)
             if (type(msg) = "roChannelStoreEvent")
-                ProcessRoChannelStoreEvent(msg)
+                m.logStoreEvent(msg)
             end if
             if msg.isRequestSucceeded() then
                 products = msg.GetResponse()
@@ -199,35 +297,6 @@ function _PurchasesSDK(o = {} as object) as object
         billing = o.billing
     end if
 
-    registry = {
-        set: function(newEntries as object) as void
-            entries = m.get()
-            if entries <> invalid
-                for each key in newEntries
-                    entries[key] = newEntries[key]
-                end for
-            end if
-            section = createObject("roRegistrySection", "RevenueCat")
-            section.write("Storage", formatJson(entries))
-            section.flush()
-        end function,
-        get: function() as object
-            section = createObject("roRegistrySection", "RevenueCat")
-            if section.exists("Storage")
-                try
-                    entries = parseJson(section.read("Storage"))
-                catch e
-                    print("Failed to read registry:" + e.message)
-                end try
-                if type(entries) = "roAssociativeArray" then return entries
-            end if
-        end function,
-        clear: function() as void
-            section = createObject("roRegistrySection", "RevenueCat")
-            section.delete("Storage")
-        end function,
-    }
-
     api = {
         _defaultHeaders: {
             "X-Platform-Flavor": "native",
@@ -241,7 +310,7 @@ function _PurchasesSDK(o = {} as object) as object
             "X-Storefront": "ESP",
             "X-Is-Sandbox": "true",
         }
-        configuration: _InternalPurchasesConfiguration({ global: _internal_global }),
+        configuration: configuration,
         headers: function() as object
             headers = {
                 "Authorization": "Bearer " + m.configuration.get().apiKey,
@@ -344,25 +413,13 @@ function _PurchasesSDK(o = {} as object) as object
         api = o.api
     end if
 
-    log = {
-        error: function(message as string) as void
-            print("😿‼️  Error: " + message)
-        end function,
-        info: function(message as string) as void
-            print("ℹ️  Info: " + message)
-        end function,
-        warning: function(message as string) as void
-            print("⚠️  Warning: " + message)
-        end function,
-    }
-
     return {
         log: log,
         errors: ERRORS,
         billing: billing,
         api: api,
         registry: registry,
-        configuration: _InternalPurchasesConfiguration({ global: _internal_global }),
+        configuration: configuration,
         updateCustomerCache: function(customer as object) as void
             ' save customer info to disk cache
         end function,
@@ -552,9 +609,9 @@ function _PurchasesSDK(o = {} as object) as object
             result = m[args.method](args.args)
             if result <> invalid then
                 callbackField = args.callbackID
-                print "callbackField: "; callbackField
-                print "method: "; args.method
-                print "result: "; result
+                m.log.debug("callbackField: " + callbackField.ToStr())
+                m.log.debug("method: " + args.method.ToStr())
+                m.log.debug("result: " + formatJson(result))
                 m.task[callbackField] = result
                 m.task.unobserveField(callbackField)
                 m.task.removeField(callbackField)
@@ -562,21 +619,6 @@ function _PurchasesSDK(o = {} as object) as object
         end function,
         task: o.task
     }
-end function
-
-function ProcessRoChannelStoreEvent(event as object) as void
-    if event.isRequestSucceeded() then
-        print("Store Request success")
-        print(event.GetResponse())
-    else if event.isRequestFailed() then
-        print("Store Request failure")
-        print(event.GetStatus())
-        print(event.GetStatusMessage())
-    else if event.isRequestInterrupted() then
-        print("Store Request interrupted")
-        print(event.GetStatus())
-        print(event.GetStatusMessage())
-    end if
 end function
 
 ' options: {

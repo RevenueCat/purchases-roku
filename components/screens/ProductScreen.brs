@@ -2,11 +2,13 @@
 
 sub init()
     ' Initialise the SDK
-    Purchases().configure({
-        "apiKey": "roku_ltxwuCGexxpozfEKvNcnQKSpzmT",
-        ' "apiKey": "roku_rYIAQxwuNBGwZmldIjYahxSwHDk",
-        ' "proxyUrl": "http://192.168.1.34:8000/v1/",
-    })
+    if Purchases().isConfigured() <> true
+        Purchases().configure({
+            "apiKey": "roku_ltxwuCGexxpozfEKvNcnQKSpzmT",
+            ' "apiKey": "roku_rYIAQxwuNBGwZmldIjYahxSwHDk",
+            ' "proxyUrl": "http://192.168.1.34:8000/v1/",
+        })
+    end if
     ' Login the user
     Purchases().logIn("mark_roku_test", sub(subscriber, error)
         ' Get current offerings

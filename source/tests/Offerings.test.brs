@@ -11,7 +11,7 @@ function OfferingsTests(t)
                     return { data: productsByID }
                 end function
             }
-            p = _PurchasesSDK({ billing: billing })
+            p = _InternalPurchases({ billing: billing })
             p.configure({ apiKey: Constants().TEST_API_KEY })
             t.addContext({ purchases: p })
         end sub)

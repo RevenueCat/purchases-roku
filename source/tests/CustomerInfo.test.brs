@@ -1,7 +1,7 @@
 function customerInfoTests(t)
     t.describe("CustomerInfo Tests", sub(t)
         t.beforeEach(sub(t)
-            p = _PurchasesSDK()
+            p = _InternalPurchases()
             p.configure({ apiKey: Constants().TEST_API_KEY })
             p.login("user1")
             t.addContext({ purchases: p })

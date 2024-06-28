@@ -9,7 +9,7 @@ function PurchaseTests(t)
                     return { data: purchasedTransactionFixture() }
                 end function
             }
-            p = _PurchasesSDK({ billing: billing })
+            p = _InternalPurchases({ billing: billing })
             p.configure({ apiKey: Constants().TEST_API_KEY })
             p.login("mark_roku_test")
             t.addContext({ purchases: p })

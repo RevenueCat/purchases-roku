@@ -1,7 +1,7 @@
 function IdentityTests(t)
     t.describe("Identity Tests", sub(t)
         t.beforeEach(sub(t)
-            p = _PurchasesSDK()
+            p = _InternalPurchases()
             p.configure({ apiKey: Constants().TEST_API_KEY })
             t.addContext({ purchases: p })
         end sub)

@@ -1,5 +1,4 @@
 function init()
-    print("Initializing Purchases Task")
     if m.global.getField("purchases_task_initialized") = invalid then
         m.global.addFields({ "purchases_task_initialized": true })
         m.port = CreateObject("roMessagePort")
@@ -8,15 +7,12 @@ function init()
         m.top.control = "RUN"
         m.store = CreateObject("roChannelStore")
         m.store.SetMessagePort(m.port)
-        m.purchases = _PurchasesSDK({ task: m.top, global: m.global })
+        m.purchases = _InternalPurchases({ task: m.top, global: m.global })
         m.callbackCounter = 0
-    else
-        print("ERROR: PurchasesTask already initialized. Aborting")
     end if
 end function
 
 sub runloop()
-    print("Running Purchases Task")
     while true
         msg = wait(5 * 1000, m.port)
         if msg = invalid then
