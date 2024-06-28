@@ -3,11 +3,13 @@ function Purchases() as object
         if m.global = invalid then
             throw "The RevenueCat SDK can only be called from SceneGraph components where the m.global object is available."
         end if
-        task = m.global.getScene().findNode("purchasesTask")
-        if task = invalid then
-            task = m.global.getScene().createChild("PurchasesTask")
-            task.id = "purchasesTask"
-            m.global.addFields({ revenueCatSDKConfig: {} })
+        if m.global.isRunningRevenueCatTests = invalid
+            task = m.global.getScene().findNode("purchasesTask")
+            if task = invalid then
+                task = m.global.getScene().createChild("PurchasesTask")
+                task.id = "purchasesTask"
+                m.global.addFields({ revenueCatSDKConfig: {} })
+            end if
         end if
         m.context = {}
         GetGlobalAA().rc_purchasesSingleton = {
@@ -23,14 +25,16 @@ function Purchases() as object
             setProxyURL: sub(proxyURL as string)
                 m._internal.configuration.set({ proxyUrl: proxyURL })
             end sub,
-            proxyURL: function() as string
+            proxyURL: function() as object
                 return m._internal.configuration.get().proxyUrl
             end function,
             setLogLevel: sub(logLevel as string)
                 m._internal.configuration.set({ logLevel: logLevel })
             end sub,
             logLevel: function() as string
-                return m._internalConfiguration.get().logLevel
+                logLevel = m._internal.configuration.get().logLevel
+                if logLevel = invalid then return "info"
+                return logLevel
             end function,
             logIn: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
                 m._internal.invoke("logIn", inputArgs, callbackFunc)

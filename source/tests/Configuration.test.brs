@@ -27,5 +27,17 @@ function ConfigurationTests(t)
             p.configure({ apiKey: Constants().TEST_API_KEY })
             t.assert.isTrue(p.configuration.isConfigured(), "Expected configured")
         end sub)
+
+        t.it("Can configure Proxy", sub(t)
+            t.assert.isInvalid(Purchases().proxyUrl(), "Unexpected proxy URL")
+            Purchases().setProxyUrl("http://localhost:8080")
+            t.assert.equal(Purchases().proxyUrl(), "http://localhost:8080", "Unexpected proxy URL")
+        end sub)
+
+        t.it("Can configure LogLevel", sub(t)
+            t.assert.equal(Purchases().logLevel(), "info", "Unexpected log level")
+            Purchases().setLogLevel("debug")
+            t.assert.equal(Purchases().logLevel(), "debug", "Unexpected log level")
+        end sub)
     end sub)
 end function
