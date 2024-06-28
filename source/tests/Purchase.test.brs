@@ -32,6 +32,9 @@ function PurchaseTests(t)
             subscriber = data.subscriber
             t.assert.isValid(subscriber, "Subscriber error")
             t.assert.isValid(subscriber.entitlements, "Entitlements error")
+            for each entitlement in subscriber.entitlements.Items()
+                t.assert.isValid(entitlement.value.isActive, "Entitlements isActive error")
+            end for
             t.assert.isValid(subscriber.first_seen, "First seen error")
             t.assert.isValid(subscriber.last_seen, "Last seen error")
             t.assert.isInvalid(subscriber.management_url, "Management URL error")

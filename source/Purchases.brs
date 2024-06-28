@@ -389,7 +389,7 @@ function _InternalPurchases(o = {} as object) as object
             })
             if result.ok
                 return {
-                    data: result.json().subscriber
+                    data: m.processSubscriber(result.json())
                 }
             else
                 return {
@@ -405,7 +405,7 @@ function _InternalPurchases(o = {} as object) as object
             })
             if result.ok
                 return {
-                    data: result.json().subscriber
+                    data: m.processSubscriber(result.json())
                 }
             else
                 return {
@@ -430,13 +430,23 @@ function _InternalPurchases(o = {} as object) as object
             })
             if result.ok
                 return {
-                    data: result.json().subscriber
+                    data: m.processSubscriber(result.json())
                 }
             else
                 return {
                     error: result.json()
                 }
             end if
+        end function,
+        processSubscriber: function(response as object) as object
+            request_date = CreateObject("roDateTime")
+            request_date.FromISO8601String(response.request_date)
+            for each entitlement in response.subscriber.entitlements.Items()
+                expires_date = CreateObject("roDateTime")
+                expires_date.FromISO8601String(entitlement.value.expires_date)
+                entitlement.value.isActive = expires_date.asSeconds() > request_date.asSeconds()
+            end for
+            return response.subscriber
         end function,
     }
     if o.api <> invalid then
