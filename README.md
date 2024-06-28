@@ -90,7 +90,7 @@ end sub
 
 The subscriber object is returned from different APIs. Here's an example of what it looks like:
 
-```
+```brightscript
 {
   entitlements: {
     premium: {
