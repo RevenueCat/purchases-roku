@@ -1,5 +1,3 @@
-# Purchases Roku
-
 Welcome to the RevenueCat Roku SDK.
 
 RevenueCat's Roku support is in its early stages. All feedback and issue reports are welcomed.
