@@ -34,6 +34,12 @@ git clone https://github.com/RevenueCat/purchases-roku`
 
 2. Copy the `components/purchases` folder into your app's `components` folder.
 3. Copy the `source/Purchases.brs` file into your app's `source` folder.
+4. Import the SDK in the .xml file of the component where you want to use it:
+
+```xml
+<!-- Importing the RevenueCat SDK -->
+<script type="text/brightscript" uri="pkg:/source/Purchases.brs" />
+```
 
 # How to use the SDK
 
