@@ -99,39 +99,54 @@ The subscriber object is returned from different APIs. Here's an example of what
 
 ```brightscript
 {
-  entitlements: {
-    premium: {
-      isActive: true
-      expires_date: "1970-01-01T00:00:00Z",
-      grace_period_expires_date: invalid,
-      product_identifier: "yearly_subscription_product",
-      purchase_date: "1970-01-01T00:00:00Z"
-    }
-  },
-  first_seen: "1970-01-01T00:00:00Z",
-  last_seen: "1970-01-01T00:00:00Z",
-  management_url: invalid,
-  non_subscriptions: {},
-  original_app_user_id: "$RCAnonymousID:XXXXXXXXXXXXXXXX",
-  original_application_version: invalid,
-  original_purchase_date: invalid,
-  other_purchases: {},
-  subscriptions: {
-    yearly_subscription_product: {
-      auto_resume_date: invalid,
-      billing_issues_detected_at: invalid,
-      expires_date: "1970-01-01T00:00:00Z",
-      grace_period_expires_date: invalid,
-      is_sandbox: true,
-      original_purchase_date: "1970-01-01T00:00:00Z",
-      period_type: "normal",
-      purchase_date: "1970-01-01T00:00:00Z",
-      refunded_at: invalid,
-      store: "roku",
-      store_transaction_id: 00000000-0000-0000-0000-000000000000,
-      unsubscribe_detected_at: invalid
-    }
+  activeSubscriptions: ["my_product_id"]
+  allExpirationDatesByProduct: {
+    "my_product_id": <Component: roDateTime>
   }
+  allPurchaseDatesByProduct: {
+    "my_product_id": <Component: roDateTime>
+  }
+  allPurchasedProductIds: ["my_product_id"]
+  entitlements: {
+    all: {
+      billingIssueDetectedAt: invalid
+      expirationDate: <Component: roDateTime>
+      gracePeriodExpiresDate: invalid
+      identifier: "premium"
+      isActive: false
+      isSandbox: true
+      latestPurchaseDate: <Component: roDateTime>
+      originalPurchaseDate: <Component: roDateTime>
+      ownershipType: "PURCHASED"
+      periodType: "normal"
+      productIdentifier: "my_product_identifier"
+      productPlanIdentifier: invalid
+      store: "app_store"
+      unsubscribeDetectedAt: invalid
+      willRenew: false
+    }
+    active: {}
+  }
+  firstSeen: <Component: roDateTime>
+  lastSeen: <Component: roDateTime>
+  latestExpirationDate: <Component: roDateTime>
+  managementUrl: invalid
+  nonSubscriptionTransactions: {
+    "my_product_id": [
+      {
+          isSandbox: false
+          originalPurchaseDate: <Component: roDateTime>
+          purchaseDate: <Component: roDateTime>
+          store: "roku"
+          storeTransactionIdentifier: "XXXXXXX"
+          transactionIdentifier: "XXXXXXX"
+      }
+    ]
+  }
+  originalAppUserId: "$RCAnonymousID:XXXXXXXXXXXXXXXX"
+  originalApplicationVersion: "1.0"
+  originalPurchaseDate: <Component: roDateTime>
+  requestDate: <Component: roDateTime>
 }
 ```
 
