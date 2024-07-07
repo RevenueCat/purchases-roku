@@ -332,6 +332,8 @@ function subscriberFixture(inputArgs = {}) as object
             "subscriptions": {}
         }
     }
+function wronglyConfiguredCatalogFixture() as object
+    return [{ code: "PROD1" }, { code: "PROD2" }, { code: "FAILPROD" }]
 end function
 
 function identifyFixture(inputArgs = {}) as object

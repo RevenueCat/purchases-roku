@@ -183,8 +183,16 @@ function _InternalPurchases(o = {} as object) as object
         }
     }
 
+    STRINGS = {
+        FAILED_TO_FETCH_PRODUCTS: "Failed to fetch products from the Roku store. This can happen if billing testing is not correctly consfigured. Please review the 'How to setup a channel' section of the README."
+    }
+
     configuration = _InternalPurchases_Configuration({ global: _internal_global })
     log = _InternalPurchases_Logger({ configuration: configuration })
+    if o.log <> invalid then
+        log = o.log
+    end if
+
     configuration.log = log
 
     registry = {
@@ -456,6 +464,7 @@ function _InternalPurchases(o = {} as object) as object
     return {
         log: log,
         errors: ERRORS,
+        strings: STRINGS,
         billing: billing,
         api: api,
         registry: registry,
@@ -589,6 +598,10 @@ function _InternalPurchases(o = {} as object) as object
             end if
 
             productsByID = result.data
+
+            if productsByID.Count() = 3 and (productsByID["PROD1"] <> invalid or productsByID["PROD2"] <> invalid or productsByID["FAILPROD"] <> invalid)
+                m.log.error(m.strings.FAILED_TO_FETCH_PRODUCTS)
+            end if
 
             for each offering in offerings.offerings
                 annual = invalid

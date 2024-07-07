@@ -1,22 +1,23 @@
+function configurePurchases(inputArgs = {} as object)
+    billing = {
+        fixtureProducts: inputArgs.products,
+        getProductsById: function()
+            productsByID = {}
+            for each product in m.fixtureProducts
+                productsByID[product.code] = product
+            end for
+            return { data: productsByID }
+        end function
+    }
+    p = _InternalPurchases({ billing: billing, log: TestLogger(), })
+    p.configuration.configure({ apiKey: Constants().TEST_API_KEY })
+    inputArgs.t.addContext({ purchases: p })
+end function
+
 function OfferingsTests(t)
     t.describe("Offerings Tests", sub(t)
-        t.beforeEach(sub(t)
-            billing = {
-                getProductsByID: function()
-                    products = catalogFixture()
-                    productsByID = {}
-                    for each product in products
-                        productsByID[product.code] = product
-                    end for
-                    return { data: productsByID }
-                end function
-            }
-            p = _InternalPurchases({ billing: billing })
-            p.configuration.configure({ apiKey: Constants().TEST_API_KEY })
-            t.addContext({ purchases: p })
-        end sub)
-
         t.it("Can call getOfferings", sub(t)
+            configurePurchases({ t: t, products: catalogFixture() })
             result = t.purchases.getOfferings()
             t.assert.isValid(result, "Offerings result error")
             t.assert.isInvalid(result.error, "Unexpected error")
@@ -57,6 +58,15 @@ function OfferingsTests(t)
             t.assert.isValid(offerings.all, "All offerings error")
             t.assert.equal(offerings.all.count(), 1, "All offerings count error")
 
+            t.assert.isFalse(t.purchases.log.hasLoggedMessage(t.purchases.strings.FAILED_TO_FETCH_PRODUCTS), "Unexpected error logged")
+
+            t.pass()
+        end sub)
+
+        t.it("Logs an error when catalog returns invalid products", sub(t)
+            configurePurchases({ t: t, products: wronglyConfiguredCatalogFixture() })
+            result = t.purchases.getOfferings()
+            t.assert.isTrue(t.purchases.log.hasLoggedMessage(t.purchases.strings.FAILED_TO_FETCH_PRODUCTS), "Expected error not logged")
             t.pass()
         end sub)
     end sub)
