@@ -315,28 +315,11 @@ function catalogFixture() as object
     ]
 end function
 
-function subscriberFixture(inputArgs = {}) as object
-    return {
-        "request_date": "2024-05-12T15:52:31Z",
-        "request_date_ms": 1715529151222,
-        "subscriber": {
-            "entitlements": {},
-            "first_seen": "2024-05-07T00:47:01Z",
-            "last_seen": "2024-05-12T15:52:16Z",
-            "management_url": invalid,
-            "non_subscriptions": {},
-            "original_app_user_id": "$RCAnonymousID:1e462f206aeb4960b0707eaef6215313",
-            "original_application_version": invalid,
-            "original_purchase_date": invalid,
-            "other_purchases": {},
-            "subscriptions": {}
-        }
-    }
 function wronglyConfiguredCatalogFixture() as object
     return [{ code: "PROD1" }, { code: "PROD2" }, { code: "FAILPROD" }]
 end function
 
-function identifyFixture(inputArgs = {}) as object
+function subscriberFixture(inputArgs = {}) as object
     return {
         "request_date": "2024-05-12T15:53:53Z",
         "request_date_ms": 1715529233759,
@@ -352,7 +335,18 @@ function identifyFixture(inputArgs = {}) as object
             "first_seen": "2023-04-04T23:11:37Z",
             "last_seen": "2024-01-10T16:25:15Z",
             "management_url": invalid,
-            "non_subscriptions": {},
+            "non_subscriptions": {
+                "com.revenuecat.product.tip": [
+                    {
+                        "purchase_date": "2022-02-11T00:03:28Z",
+                        "original_purchase_date": "2022-03-10T00:04:28Z",
+                        "id": "17459f5ff7",
+                        "store_transaction_id": "340001090153249",
+                        "store": "app_store",
+                        "is_sandbox": false
+                    }
+                ]
+            },
             "original_app_user_id": "asdf",
             "original_application_version": "1.0",
             "original_purchase_date": "2013-08-01T07:00:00Z",
@@ -381,6 +375,7 @@ function identifyFixture(inputArgs = {}) as object
                     "is_sandbox": true,
                     "original_purchase_date": "2023-06-19T09:24:54Z",
                     "period_type": "normal",
+                    "ownership_type": "PURCHASED",
                     "product_plan_identifier": "month",
                     "purchase_date": "2023-06-19T09:24:54Z",
                     "refunded_at": invalid,

@@ -397,7 +397,7 @@ function _InternalPurchases(o = {} as object) as object
             })
             if result.ok
                 return {
-                    data: m.processSubscriber(result.json())
+                    data: result.json()
                 }
             else
                 return {
@@ -413,7 +413,7 @@ function _InternalPurchases(o = {} as object) as object
             })
             if result.ok
                 return {
-                    data: m.processSubscriber(result.json())
+                    data: result.json()
                 }
             else
                 return {
@@ -438,23 +438,13 @@ function _InternalPurchases(o = {} as object) as object
             })
             if result.ok
                 return {
-                    data: m.processSubscriber(result.json())
+                    data: result.json()
                 }
             else
                 return {
                     error: result.json()
                 }
             end if
-        end function,
-        processSubscriber: function(response as object) as object
-            request_date = CreateObject("roDateTime")
-            request_date.FromISO8601String(response.request_date)
-            for each entitlement in response.subscriber.entitlements.Items()
-                expires_date = CreateObject("roDateTime")
-                expires_date.FromISO8601String(entitlement.value.expires_date)
-                entitlement.value.isActive = expires_date.asSeconds() > request_date.asSeconds()
-            end for
-            return response.subscriber
         end function,
     }
     if o.api <> invalid then
@@ -520,24 +510,36 @@ function _InternalPurchases(o = {} as object) as object
                 return m.getCustomerInfo()
             end if
             m.setUserId(userId)
-            return m.api.identify({
+            result =  m.api.identify({
                 userId: currentUserID
                 newUserId: userId
             })
+            if result.error <> invalid
+                return result
+            end if
+            return { data: m.buildSubscriber(result.data) }
         end function,
         logOut: function(inputArgs = {}) as object
             m.configuration.assert()
             currentUserID = m.appUserId()
             anonUserID = m.generateAnonUserID()
             m.setUserId(anonUserID)
-            return m.api.identify({
+            result = m.api.identify({
                 userId: currentUserID
                 newUserId: anonUserID
             })
+            if result.error <> invalid
+                return result
+            end if
+            return { data: m.buildSubscriber(result.data) }
         end function,
         getCustomerInfo: function(inputArgs = {}) as object
             m.configuration.assert()
-            return m.api.subscriber({ userId: m.appUserId() })
+            result = m.api.subscriber({ userId: m.appUserId() })
+            if result.error <> invalid
+                return result
+            end if
+            return { data: m.buildSubscriber(result.data) }
         end function,
         purchase: function(inputArgs = {}) as object
             m.configuration.assert()
@@ -577,7 +579,7 @@ function _InternalPurchases(o = {} as object) as object
             return {
                 data: {
                     transaction: transactions[0],
-                    subscriber: result.data
+                    subscriber: m.buildSubscriber(result.data)
                 }
             }
         end function,
@@ -650,6 +652,134 @@ function _InternalPurchases(o = {} as object) as object
                     current: current_offering,
                     all: all_offerings,
                 }
+            }
+        end function,
+        buildDateFromString: function(dateString)
+            if dateString = invalid then return invalid
+            date = CreateObject("roDateTime")
+            date.FromISO8601String(dateString)
+            return date
+        end function,
+        buildProductId: function(productId, purchase) as string
+            if purchase.product_plan_identifier <> invalid
+                return productId + ":" + purchase.product_plan_identifier
+            end if
+            return productId
+        end function
+        willRenew: function(purchase) as boolean
+            isPromo = purchase.store = "promotional"
+            isLifetime = purchase.expirationDate = invalid
+            hasUnsubscribed = purchase.unsubscribeDetectedAt <> invalid
+            hasBillingIssues = purchase.billingIssueDetectedAt <> invalid
+            return (isPromo or isLifetime or hasUnsubscribed or hasBillingIssues) = false
+        end function,
+        buildSubscriber: function(response as object) as object
+            requestDate = m.buildDateFromString(response.request_date)
+            subscriber = response.subscriber
+            firstSeen = m.buildDateFromString(subscriber.first_seen)
+            lastSeen = m.buildDateFromString(subscriber.last_seen)
+
+            allEntitlements = {}
+            activeEntitlements = {}
+            for each entry in subscriber.entitlements.Items()
+                entitlement = entry.value
+                expirationDate = m.buildDateFromString(entitlement.expires_date)
+                purchaseDate = m.buildDateFromString(entitlement.purchase_date)
+                gracePeriodExpiresDate = invalid
+                if entitlement.grace_period_expires_date <> invalid
+                    gracePeriodExpiresDate = CreateObject("roDateTime")
+                    gracePeriodExpiresDate.FromISO8601String(entitlement.grace_period_expires_date)
+                end if
+                isActive = expirationDate.asSeconds() > requestDate.asSeconds()
+                purchase = subscriber.subscriptions[entitlement.product_identifier]
+                if purchase = invalid
+                    purchase = subscriber.non_subscriptions[entitlement.product_identifier]
+                end if
+                if purchase = invalid
+                    m.log.error("Could not find purchase for entitlement with product_id" + entitlement.product_identifier)
+                end if
+                value = {
+                    identifier: entry.key,
+                    isActive: isActive,
+                    willRenew: m.willRenew(purchase),
+                    expirationDate: expirationDate,
+                    gracePeriodExpiresDate: gracePeriodExpiresDate,
+                    productIdentifier: m.buildProductId(entitlement.product_identifier, purchase),
+                    latestPurchaseDate: purchaseDate,
+                    originalPurchaseDate: m.buildDateFromString(purchase.original_purchase_date),
+                    isSandbox: purchase.is_sandbox,
+                    ownershipType: purchase.ownership_type,
+                    store: purchase.store,
+                    periodType: purchase.period_type,
+                    unsubscribeDetectedAt: m.buildDateFromString(purchase.unsubscribe_detected_at),
+                    billingIssueDetectedAt: m.buildDateFromString(purchase.billing_issue_detected_at),
+                    productPlanIdentifier: entitlement.product_plan_identifier,
+                }
+                if isActive then activeEntitlements.AddReplace(entry.key, value)
+                allEntitlements.AddReplace(entry.key, value)
+            end for
+            allPurchasedProductIds = []
+            allPurchaseDatesByProduct = {}
+            allExpirationDatesByProduct = {}
+            for each entry in subscriber.subscriptions.Items()
+                subscription = entry.value
+                productIdentifier = m.buildProductId(entry.key, entry.value)
+                allPurchasedProductIds.push(productIdentifier)
+
+                allPurchaseDatesByProduct.AddReplace(
+                    productIdentifier, m.buildDateFromString(subscription.purchase_date)
+                )
+                allExpirationDatesByProduct.AddReplace(
+                    productIdentifier, m.buildDateFromString(subscription.expires_date)
+                )
+            end for
+            activeSubscriptions = []
+            for each entry in allExpirationDatesByProduct.Items()
+                if entry.value.asSeconds() > requestDate.asSeconds()
+                    activeSubscriptions.push(entry.key)
+                end if
+            end for
+            nonSubscriptionTransactions = {}
+            for each entry in subscriber.non_subscriptions.Items()
+                allTransactions = []
+                for each transaction in entry.value
+                    allTransactions.push({
+                        purchaseDate: m.buildDateFromString(transaction.purchase_date),
+                        originalPurchaseDate: m.buildDateFromString(transaction.original_purchase_date),
+                        transactionIdentifier: transaction.id,
+                        storeTransactionIdentifier: transaction.store_transaction_id,
+                        store: transaction.store,
+                        isSandbox: transaction.is_sandbox,
+                    })
+                end for
+                productIdentifier = m.buildProductId(entry.key, entry.value)
+                allPurchasedProductIds.push(productIdentifier)
+                nonSubscriptionTransactions.AddReplace(productIdentifier, allTransactions)
+            end for
+            latestExpirationDate = invalid
+            for each item in allExpirationDatesByProduct.Items()
+                if latestExpirationDate = invalid or item.value.asSeconds() > latestExpirationDate.asSeconds()
+                    latestExpirationDate = item.value
+                end if
+            end for
+            return {
+                requestDate: requestDate,
+                firstSeen: firstSeen,
+                lastSeen: lastSeen,
+                managementUrl: subscriber.management_url,
+                originalAppUserId: subscriber.original_app_user_id,
+                originalApplicationVersion: subscriber.original_application_version,
+                originalPurchaseDate: m.buildDateFromString(subscriber.original_purchase_date),
+                entitlements: {
+                    active: activeEntitlements,
+                    all: allEntitlements,
+                },
+                nonSubscriptionTransactions: nonSubscriptionTransactions,
+                activeSubscriptions: activeSubscriptions,
+                allPurchasedProductIds: allPurchasedProductIds,
+                allPurchaseDatesByProduct: allPurchaseDatesByProduct,
+                allExpirationDatesByProduct: allExpirationDatesByProduct,
+                latestExpirationDate: latestExpirationDate
             }
         end function,
         invokeMethod: function(args) as void
