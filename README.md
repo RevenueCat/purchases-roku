@@ -4,16 +4,16 @@ RevenueCat's Roku support is in its early stages. All feedback and issue reports
 
 # How to setup your Roku developer account
 
-Follow the [First Steps](https://developer.roku.com/en-gb/docs/developer-program/getting-started/first-steps.md) guide to create a Roku developer account, login to your Roku device and enable developer mode.
+Follow the [First Steps](https://developer.roku.com/en-gb/docs/developer-program/getting-started/first-steps.md) guide to create a Roku developer account, login to your Roku device and enable developer mode on your Roku device.
 
 # How to setup a channel
 
 Once you have your developer account created, head to the [dashboard](https://developer.roku.com/dev/dashboard)
 
-1. Create a new Beta Channel
+1. First, [create a new Beta Channel](https://developer.roku.com/en-gb/docs/developer-program/publishing/channel-publishing-guide.md#create-a-channel).
 2. Make sure the  Beta Channel is [enabled for billing testing](https://developer.roku.com/en-gb/docs/developer-program/roku-pay/testing/billing-testing.md).
-3. Under "Monetization" -> "Test users", add your user email address.
-4. Under "Monetization" -> "Product", follow the process to submit the tax documents, and after you're approved, create the test products.
+3. Under "Monetization" -> "Test users", [add a test user](https://developer.roku.com/en-gb/docs/developer-program/roku-pay/quickstart/test-users.md) with the email associated to your Roku device. .
+4. Under "Monetization" -> "Product", follow the process to submit the tax documents, and after you're approved, [create the products](https://developer.roku.com/en-gb/docs/developer-program/roku-pay/quickstart/in-channel-products.md#adding-a-new-product).
 
 IMPORTANT: Only the "root account user" can test billing on device. If you get added as a collaborator to someone else's developer account, billing testing will not work. You'll need to create your own developer account.
 
