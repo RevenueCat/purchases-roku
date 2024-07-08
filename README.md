@@ -22,7 +22,8 @@ IMPORTANT: Only the "root account user" can test billing on device. If you get a
 1. Make sure your project has been enabled to create Roku apps. If you're not sure, talk to your RevenueCat contact.
 2. Open the RevenueCat dashboard, select your project, and click on "Add app".
 3. Select "Roku Store", enter your app's name and the Roku Pay API key you can find in https://developer.roku.com/rpay-web-services
-4. Once the app is created, click on "Public API Key" and copy over the value which should start with "roku_XXXXXX". You will need it to configure the SDK later.
+4. Once the app is created, click on the "Roku Server to Server notifications settings", copy the "Roku Push Notification URL" which start with "https://api.revenuecat.com/v1/incoming-webhooks/roku-pay-jwt-notification" and paste it in the Push notifications URL section in the same page where you found the Roku Pay API key.
+5. Click on "Public API Key" and copy over the value which should start with "roku_XXXXXX". You will need it to configure the SDK later.
 
 # How to install the SDK
 
@@ -293,8 +294,8 @@ sub init()
         ' If my entitlement is not active, fetch offerings to show the paywall
         if subscriber.entitlements.my_entitlement.isActive = false
           fetchOfferings()
-        end
-      end
+        end if
+      end if
   end sub)
 end sub
 
