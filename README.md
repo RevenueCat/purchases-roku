@@ -111,7 +111,6 @@ The subscriber object is returned from different APIs. Here's an example of what
     all: {
       billingIssueDetectedAt: invalid
       expirationDate: <Component: roDateTime>
-      gracePeriodExpiresDate: invalid
       identifier: "premium"
       isActive: false
       isSandbox: true

@@ -685,11 +685,6 @@ function _InternalPurchases(o = {} as object) as object
                 entitlement = entry.value
                 expirationDate = m.buildDateFromString(entitlement.expires_date)
                 purchaseDate = m.buildDateFromString(entitlement.purchase_date)
-                gracePeriodExpiresDate = invalid
-                if entitlement.grace_period_expires_date <> invalid
-                    gracePeriodExpiresDate = CreateObject("roDateTime")
-                    gracePeriodExpiresDate.FromISO8601String(entitlement.grace_period_expires_date)
-                end if
                 isActive = expirationDate.asSeconds() > requestDate.asSeconds()
                 purchase = subscriber.subscriptions[entitlement.product_identifier]
                 if purchase = invalid
@@ -703,7 +698,6 @@ function _InternalPurchases(o = {} as object) as object
                     isActive: isActive,
                     willRenew: m.willRenew(purchase),
                     expirationDate: expirationDate,
-                    gracePeriodExpiresDate: gracePeriodExpiresDate,
                     productIdentifier: m.buildProductId(entitlement.product_identifier, purchase),
                     latestPurchaseDate: purchaseDate,
                     originalPurchaseDate: m.buildDateFromString(purchase.original_purchase_date),
