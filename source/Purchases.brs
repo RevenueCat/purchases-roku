@@ -424,6 +424,17 @@ function _InternalPurchases(o = {} as object) as object
         postReceipt: function(inputArgs = {}) as object
             transaction = inputArgs.transaction
             app_user_id = inputArgs.userId
+
+            trial_duration = invalid
+            if transaction.trialQuantity <> invalid and transaction.trialQuantity > 0
+                trial_duration = transaction.trialQuantity.ToStr() + " " + transaction.trialType
+            end if
+
+            intro_duration = invalid
+            if transaction.freeTrialQuantity <> invalid and transaction.freeTrialQuantity > 0
+                intro_duration = transaction.freeTrialQuantity.ToStr() + " " + transaction.freeTrialType
+            end if
+
             result = _fetch({
                 url: m.urls().receipts,
                 headers: m.headers(),
@@ -434,6 +445,9 @@ function _InternalPurchases(o = {} as object) as object
                     product_id: transaction.code,
                     price: transaction.amount,
                     currency: "USD",
+                    intro_duration: intro_duration,
+                    trial_duration: trial_duration,
+                    introductory_price: transaction.trialCost,
                 })
             })
             if result.ok
