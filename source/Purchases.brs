@@ -733,13 +733,8 @@ function _InternalPurchases(o = {} as object) as object
                 subscription = entry.value
                 productIdentifier = m.buildProductId(entry.key, entry.value)
                 allPurchasedProductIds.push(productIdentifier)
-
-                allPurchaseDatesByProduct.AddReplace(
-                    productIdentifier, m.buildDateFromString(subscription.purchase_date)
-                )
-                allExpirationDatesByProduct.AddReplace(
-                    productIdentifier, m.buildDateFromString(subscription.expires_date)
-                )
+                allPurchaseDatesByProduct.AddReplace(productIdentifier, m.buildDateFromString(subscription.purchase_date))
+                allExpirationDatesByProduct.AddReplace(productIdentifier, m.buildDateFromString(subscription.expires_date))
             end for
             activeSubscriptions = []
             for each entry in allExpirationDatesByProduct.Items()
