@@ -425,14 +425,14 @@ function _InternalPurchases(o = {} as object) as object
             transaction = inputArgs.transaction
             app_user_id = inputArgs.userId
 
-            trial_duration = invalid
+            introductory_duration = invalid
             if transaction.trialQuantity <> invalid and transaction.trialQuantity > 0
-                trial_duration = transaction.trialQuantity.ToStr() + " " + transaction.trialType
+                introductory_duration = transaction.trialQuantity.ToStr() + " " + transaction.trialType
             end if
 
-            intro_duration = invalid
+            free_trial_duration = invalid
             if transaction.freeTrialQuantity <> invalid and transaction.freeTrialQuantity > 0
-                intro_duration = transaction.freeTrialQuantity.ToStr() + " " + transaction.freeTrialType
+                free_trial_duration = transaction.freeTrialQuantity.ToStr() + " " + transaction.freeTrialType
             end if
 
             result = _fetch({
@@ -445,8 +445,8 @@ function _InternalPurchases(o = {} as object) as object
                     product_id: transaction.code,
                     price: transaction.amount,
                     currency: "USD",
-                    intro_duration: intro_duration,
-                    trial_duration: trial_duration,
+                    intro_duration: introductory_duration,
+                    trial_duration: free_trial_duration,
                     introductory_price: transaction.trialCost,
                 })
             })
@@ -524,7 +524,7 @@ function _InternalPurchases(o = {} as object) as object
                 return m.getCustomerInfo()
             end if
             m.setUserId(userId)
-            result =  m.api.identify({
+            result = m.api.identify({
                 userId: currentUserID
                 newUserId: userId
             })
@@ -735,10 +735,10 @@ function _InternalPurchases(o = {} as object) as object
                 allPurchasedProductIds.push(productIdentifier)
 
                 allPurchaseDatesByProduct.AddReplace(
-                    productIdentifier, m.buildDateFromString(subscription.purchase_date)
+                productIdentifier, m.buildDateFromString(subscription.purchase_date)
                 )
                 allExpirationDatesByProduct.AddReplace(
-                    productIdentifier, m.buildDateFromString(subscription.expires_date)
+                productIdentifier, m.buildDateFromString(subscription.expires_date)
                 )
             end for
             activeSubscriptions = []
