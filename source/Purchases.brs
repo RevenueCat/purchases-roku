@@ -335,18 +335,60 @@ function _InternalPurchases(o = {} as object) as object
         billing = o.billing
     end if
 
+    appInfo = {
+        appInfo: CreateObject("roAppInfo")
+        GetID: function()
+            return m.appInfo.GetID()
+        end function,
+        IsDev: function()
+            return m.appInfo.IsDev()
+        end function,
+        GetVersion: function()
+            return m.appInfo.GetVersion()
+        end function,
+        GetTitle: function()
+            return m.appInfo.GetTitle()
+        end function,
+        GetDevID: function()
+            return m.appInfo.GetDevID()
+        end function,
+    }
+    if o.appInfo <> invalid then
+        appInfo = o.appInfo
+    end if
+
+    deviceInfo = {
+        deviceInfo: CreateObject("roDeviceInfo")
+        GetUserCountryCode: function()
+            return m.deviceInfo.GetUserCountryCode()
+        end function,
+        GetCurrentLocale: function()
+            return m.deviceInfo.GetCurrentLocale()
+        end function,
+        GetCountryCode: function()
+            return m.deviceInfo.GetCountryCode()
+        end function,
+        GetOSVersion: function()
+            v = m.deviceInfo.GetOSVersion()
+            return v.major + "." + v.minor + "." + v.revision
+        end function,
+    }
+    if o.deviceInfo <> invalid then
+        deviceInfo = o.deviceInfo
+    end if
+
     api = {
+        appInfo: appInfo,
+        deviceInfo: deviceInfo,
         _defaultHeaders: {
             "X-Platform-Flavor": "native",
             "X-Platform": "roku",
-            "X-Client-Build-Version": "1",
-            "X-Client-Bundle-ID": "com.revenuecat.sampleapp",
-            "X-Client-Version": "1.0",
+            "X-Client-Bundle-ID": appInfo.GetID(),
+            "X-Client-Version": appInfo.GetVersion(),
             "X-Version": "0.0.1",
-            "X-Platform-Version": "roku",
-            "X-Observer-Mode-Enabled": "false",
-            "X-Storefront": "ESP",
-            "X-Is-Sandbox": "true",
+            "X-Platform-Version": deviceInfo.GetOSVersion(),
+            "X-Storefront": deviceInfo.GetCountryCode(),
+            "X-Is-Sandbox": appInfo.IsDev().ToStr(),
         }
         configuration: configuration,
         headers: function() as object
@@ -733,13 +775,8 @@ function _InternalPurchases(o = {} as object) as object
                 subscription = entry.value
                 productIdentifier = m.buildProductId(entry.key, entry.value)
                 allPurchasedProductIds.push(productIdentifier)
-
-                allPurchaseDatesByProduct.AddReplace(
-                productIdentifier, m.buildDateFromString(subscription.purchase_date)
-                )
-                allExpirationDatesByProduct.AddReplace(
-                productIdentifier, m.buildDateFromString(subscription.expires_date)
-                )
+                allPurchaseDatesByProduct.AddReplace(productIdentifier, m.buildDateFromString(subscription.purchase_date))
+                allExpirationDatesByProduct.AddReplace(productIdentifier, m.buildDateFromString(subscription.expires_date))
             end for
             activeSubscriptions = []
             for each entry in allExpirationDatesByProduct.Items()
