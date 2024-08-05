@@ -486,7 +486,6 @@ function _InternalPurchases(o = {} as object) as object
                     app_user_id: app_user_id,
                     product_id: transaction.code,
                     price: transaction.amount,
-                    currency: "USD",
                     intro_duration: introductory_duration,
                     trial_duration: free_trial_duration,
                     introductory_price: transaction.trialCost,
