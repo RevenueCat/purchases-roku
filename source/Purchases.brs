@@ -477,6 +477,11 @@ function _InternalPurchases(o = {} as object) as object
                 free_trial_duration = transaction.freeTrialQuantity.ToStr() + " " + transaction.freeTrialType
             end if
 
+            introductory_price = invalid
+            if transaction.trialType <> invalid and transaction.trialType <> "None" and transaction.trialCost <> ""
+                introductory_price = transaction.trialCost
+            end if
+
             result = _fetch({
                 url: m.urls().receipts,
                 headers: m.headers(),
@@ -488,7 +493,7 @@ function _InternalPurchases(o = {} as object) as object
                     price: transaction.amount,
                     intro_duration: introductory_duration,
                     trial_duration: free_trial_duration,
-                    introductory_price: transaction.trialCost,
+                    introductory_price: introductory_price,
                 })
             })
             if result.ok
