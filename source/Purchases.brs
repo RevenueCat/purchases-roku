@@ -468,8 +468,10 @@ function _InternalPurchases(o = {} as object) as object
             app_user_id = inputArgs.userId
 
             introductory_duration = invalid
+            introductory_price = invalid
             if transaction.trialQuantity <> invalid and transaction.trialQuantity > 0
                 introductory_duration = transaction.trialQuantity.ToStr() + " " + transaction.trialType
+                introductory_price = transaction.trialCost
             end if
 
             free_trial_duration = invalid
@@ -488,7 +490,7 @@ function _InternalPurchases(o = {} as object) as object
                     price: transaction.amount,
                     intro_duration: introductory_duration,
                     trial_duration: free_trial_duration,
-                    introductory_price: transaction.trialCost,
+                    introductory_price: introductory_price,
                 })
             })
             if result.ok
