@@ -286,6 +286,15 @@ Purchases().getSubscriberInfo(sub(subscriber, error)
 end sub)
 ```
 
+## Set subscriber attributes
+
+```brightscript
+' success: Will be true if the attributes were successfully synchronized
+' error: Will be present if there was an error during the process
+Purchases().setAttributes(["my attribute":"my value"] ,sub(success, error)
+end sub)
+```
+
 ## Tying everything together
 
 For most apps, the usage of the SDK would look like this:

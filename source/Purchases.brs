@@ -669,7 +669,7 @@ function _InternalPurchases(o = {} as object) as object
             if result.error <> invalid
                 return result
             end if
-            return { data: {} }
+            return { data: true }
         end function,
         purchase: function(inputArgs = {}) as object
             m.configuration.assert()
