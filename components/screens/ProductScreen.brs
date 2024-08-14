@@ -11,6 +11,7 @@ sub init()
     end if
     ' Login the user
     Purchases().logIn("mark_roku_test", sub(subscriber, error)
+        Purchases().setAttributes({ "email": "foo@example.com" })
         ' Get current offerings
         if error = invalid
             Purchases().getOfferings(sub(offerings, error)
@@ -21,7 +22,7 @@ sub init()
                         Purchases().purchase(offerings.current.annual, sub(result, error)
                             if error = invalid
                                 print "Purchase successful"
-                                print result.transaction
+                                print FormatJson(result.transaction)
                                 print result.subscriber
                                 print result
                                 print error

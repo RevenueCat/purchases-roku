@@ -56,6 +56,9 @@ function Purchases() as object
             getCustomerInfo: sub(callbackFunc = invalid as dynamic)
                 m._internal.invoke("getCustomerInfo", {}, callbackFunc)
             end sub,
+            setAttributes: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
+                m._internal.invoke("setAttributes", inputArgs, callbackFunc)
+            end sub,
             getOfferings: sub(callbackFunc = invalid as dynamic)
                 m._internal.invoke("getOfferings", {}, callbackFunc)
             end sub,
@@ -176,6 +179,11 @@ function _InternalPurchases(o = {} as object) as object
     end if
 
     ERRORS = {
+        invalidSubscriberAttributesError: {
+            message: "One or more of the attributes sent could not be saved."
+            code: 21
+            codeName: "INVALID_SUBSCRIBER_ATTRIBUTES"
+        },
         configurationError: {
             message: "There is an issue with your configuration."
             code: 23
@@ -335,6 +343,31 @@ function _InternalPurchases(o = {} as object) as object
         billing = o.billing
     end if
 
+    identityManager = {
+        registry: registry,
+        setUserId: function(userId as string) as void
+            m.registry.set({ userId: userId })
+        end function,
+        appUserId: function() as string
+            entries = m.registry.get()
+            if entries <> invalid and entries.userId <> invalid then return entries.userId
+            anonUserID = m.generateAnonUserId()
+            m.registry.set({ userId: anonUserId })
+            return anonUserID
+        end function,
+        isAnonymous: function() as boolean
+            return m.appUserId().startsWith("$RCAnonymousID:")
+        end function,
+        generateAnonUserId: function() as string
+            r = CreateObject("roRegex", "-", "i")
+            uuid = r.ReplaceAll(LCase(createObject("roDeviceInfo").getRandomUUID()), "")
+            return "$RCAnonymousID:" + uuid
+        end function,
+    }
+    if o.identityManager <> invalid then
+        identityManager = o.identityManager
+    end if
+
     appInfo = {
         appInfo: CreateObject("roAppInfo")
         GetID: function()
@@ -380,6 +413,7 @@ function _InternalPurchases(o = {} as object) as object
     api = {
         appInfo: appInfo,
         deviceInfo: deviceInfo,
+        identityManager: identityManager,
         _defaultHeaders: {
             "X-Platform-Flavor": "native",
             "X-Platform": "roku",
@@ -406,14 +440,16 @@ function _InternalPurchases(o = {} as object) as object
         end function,
         urls: function() as object
             return {
-                subscribers: m.getBaseUrl() + "subscribers/",
+                getCustomerInfo: m.getBaseUrl() + "subscribers/" + m.identityManager.appUserId(),
+                getOfferings: m.getBaseUrl() + "subscribers/" + m.identityManager.appUserId() + "/offerings"
+                postSubscriberAttributes: m.getBaseUrl() + "subscribers/" +  m.identityManager.appUserId() + "/attributes",
                 identify: m.getBaseUrl() + "subscribers/identify",
-                receipts: m.getBaseUrl() + "receipts",
+                postReceipt: m.getBaseUrl() + "receipts",
             }
         end function,
         getOfferings: function(inputArgs = {}) as object
             result = _fetch({
-                url: m.urls().subscribers + inputArgs.userId + "/offerings",
+                url: m.urls().getOfferings,
                 headers: m.headers(),
                 method: "GET"
             })
@@ -447,11 +483,39 @@ function _InternalPurchases(o = {} as object) as object
                 }
             end if
         end function,
-        subscriber: function(inputArgs = {}) as object
+        getCustomerInfo: function(inputArgs = {}) as object
             result = _fetch({
-                url: m.urls().subscribers + inputArgs.userId,
+                url: m.urls().getCustomerInfo,
                 headers: m.headers(),
                 method: "GET"
+            })
+            if result.ok
+                return {
+                    data: result.json()
+                }
+            else
+                return {
+                    error: result.json()
+                }
+            end if
+        end function,
+        postSubscriberAttributes: function(inputArgs = {}) as object
+            attributes = {}
+            for each attribute in inputArgs.attributes.Items()
+                key = attribute.key
+                value = attribute.value
+                attributes[key] = {
+                    "updated_at_ms": CreateObject("roDateTime").AsSeconds() * 1000,
+                    "value": value
+                }
+            end for
+            result = _fetch({
+                url: m.urls().postSubscriberAttributes,
+                headers: m.headers(),
+                method: "POST",
+                body: FormatJson({
+                    "attributes": attributes
+                })
             })
             if result.ok
                 return {
@@ -480,7 +544,7 @@ function _InternalPurchases(o = {} as object) as object
             end if
 
             result = _fetch({
-                url: m.urls().receipts,
+                url: m.urls().postReceipt,
                 headers: m.headers(),
                 method: "POST",
                 body: FormatJson({
@@ -516,6 +580,7 @@ function _InternalPurchases(o = {} as object) as object
         api: api,
         registry: registry,
         configuration: configuration,
+        identityManager: identityManager,
         updateCustomerCache: function(customer as object) as void
             ' save customer info to disk cache
         end function,
@@ -529,22 +594,13 @@ function _InternalPurchases(o = {} as object) as object
             ' read offerings from disk cache if not stale
         end function,
         setUserId: function(userId as string) as void
-            m.registry.set({ userId: userId })
+            m.identityManager.setUserId(userId)
         end function,
         appUserId: function() as string
-            entries = m.registry.get()
-            if entries <> invalid and entries.userId <> invalid then return entries.userId
-            anonUserID = m.generateAnonUserId()
-            m.registry.set({ userId: anonUserId })
-            return anonUserID
+            return m.identityManager.appUserId()
         end function,
         isAnonymous: function() as boolean
-            return m.appUserId().startsWith("$RCAnonymousID:")
-        end function,
-        generateAnonUserId: function() as string
-            r = CreateObject("roRegex", "-", "i")
-            uuid = r.ReplaceAll(LCase(createObject("roDeviceInfo").getRandomUUID()), "")
-            return "$RCAnonymousID:" + uuid
+            return m.identityManager.isAnonymous()
         end function,
         logIn: function(userId as string) as object
             m.configuration.assert()
@@ -579,7 +635,7 @@ function _InternalPurchases(o = {} as object) as object
         logOut: function(inputArgs = {}) as object
             m.configuration.assert()
             currentUserID = m.appUserId()
-            anonUserID = m.generateAnonUserID()
+            anonUserID = m.identityManager.generateAnonUserID()
             m.setUserId(anonUserID)
             result = m.api.identify({
                 userId: currentUserID
@@ -592,11 +648,28 @@ function _InternalPurchases(o = {} as object) as object
         end function,
         getCustomerInfo: function(inputArgs = {}) as object
             m.configuration.assert()
-            result = m.api.subscriber({ userId: m.appUserId() })
+            result = m.api.getCustomerInfo({ userId: m.appUserId() })
             if result.error <> invalid
                 return result
             end if
             return { data: m.buildSubscriber(result.data) }
+        end function,
+        setAttributes: function(inputArgs = {}) as object
+            m.configuration.assert()
+
+            for each entry in inputArgs.Items()
+                if (type(entry.key) <> "roString" and type(entry.key) <> "String") or (type(entry.value) <> "roString" and type(entry.value) <> "String")
+                    return {
+                        error: m.errors.invalidSubscriberAttributesError
+                    }
+                end if
+            end for
+
+            result = m.api.postSubscriberAttributes({ userId: m.appUserId(), attributes: inputArgs })
+            if result.error <> invalid
+                return result
+            end if
+            return { data: true }
         end function,
         purchase: function(inputArgs = {}) as object
             m.configuration.assert()
