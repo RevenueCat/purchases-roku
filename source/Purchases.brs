@@ -530,6 +530,10 @@ function _InternalPurchases(o = {} as object) as object
         postReceipt: function(inputArgs = {}) as object
             transaction = inputArgs.transaction
             app_user_id = inputArgs.userId
+            presentedOfferingIdentifier = invalid
+            if inputArgs.presentedOfferingContext <> invalid
+                presentedOfferingIdentifier = inputArgs.presentedOfferingContext.offeringIdentifier
+            end if
 
             introductory_duration = invalid
             introductory_price = invalid
@@ -555,6 +559,7 @@ function _InternalPurchases(o = {} as object) as object
                     intro_duration: introductory_duration,
                     trial_duration: free_trial_duration,
                     introductory_price: introductory_price,
+                    presented_offering_identifier: presentedOfferingIdentifier,
                 })
             })
             if result.ok
@@ -674,11 +679,17 @@ function _InternalPurchases(o = {} as object) as object
         purchase: function(inputArgs = {}) as object
             m.configuration.assert()
             code = ""
+            presentedOfferingContext = invalid
             valueType = type(inputArgs)
             if inputArgs.code <> invalid
                 code = inputArgs.code
             else if inputArgs.storeProduct <> invalid and inputArgs.storeProduct.code <> invalid
                 code = inputArgs.storeProduct.code
+                if inputArgs.presentedOfferingContext <> invalid
+                    presentedOfferingContext = {
+                        offeringIdentifier: inputArgs.presentedOfferingContext.offeringIdentifier,
+                    }
+                end if
             else if valueType = "roString" or valueType = "String"
                 code = inputArgs
             end if
@@ -702,6 +713,7 @@ function _InternalPurchases(o = {} as object) as object
             result = m.api.postReceipt({
                 userId: m.appUserId(),
                 transaction: transactions[0],
+                presentedOfferingContext: presentedOfferingContext,
             })
             if result.error <> invalid
                 return result
@@ -742,24 +754,30 @@ function _InternalPurchases(o = {} as object) as object
                 for each package in offering.packages
                     product = productsByID[package.platform_product_identifier]
                     if product = invalid then continue for
+                    presentedOfferingContext = {
+                        offeringIdentifier: offering.identifier,
+                    }
                     if package.identifier = "$rc_annual"
                         annual = {
                             identifier: package.identifier,
-                            packageType: "annual"
+                            packageType: "annual",
+                            presentedOfferingContext: presentedOfferingContext,
                             storeProduct: productsByID[package.platform_product_identifier],
                         }
                         availablePackages.push(annual)
                     else if package.identifier = "$rc_monthly"
                         monthly = {
                             identifier: package.identifier,
-                            packageType: "monthly"
+                            packageType: "monthly",
+                            presentedOfferingContext: presentedOfferingContext,
                             storeProduct: productsByID[package.platform_product_identifier],
                         }
                         availablePackages.push(monthly)
                     else
                         availablePackages.push({
                             identifier: package.identifier,
-                            packageType: "custom"
+                            packageType: "custom",
+                            presentedOfferingContext: presentedOfferingContext,
                             storeProduct: productsByID[package.platform_product_identifier],
                         })
                     end if
