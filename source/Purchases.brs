@@ -419,7 +419,7 @@ function _InternalPurchases(o = {} as object) as object
             "X-Platform": "roku",
             "X-Client-Bundle-ID": appInfo.GetID(),
             "X-Client-Version": appInfo.GetVersion(),
-            "X-Version": "0.0.1",
+            "X-Version": "0.0.2",
             "X-Platform-Version": deviceInfo.GetOSVersion(),
             "X-Storefront": deviceInfo.GetCountryCode(),
             "X-Is-Sandbox": appInfo.IsDev().ToStr(),
