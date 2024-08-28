@@ -168,7 +168,7 @@ As a parameter to the `purchase()` method, you can pass an associative array con
 - `product`: From the `getOfferings` result: e.g. `offerings.current.annual.storeProduct`
 - `package`: From the `getOfferings` result: e.g. `offerings.current.annual`
 
-Additionally, the following optional parameters:
+Additionally,you can pass the following optional parameters:
 
 - `action`: To perform a product change. Valid values: `Upgrade` or `Downgrade`
 
