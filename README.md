@@ -162,14 +162,18 @@ The error model constains two fields: `code` and `message`
 
 ## Making a purchase
 
-As a parameter to the `purchase()` method, you can use one of several values:
+As a parameter to the `purchase()` method, you can pass an associative array containing one of the following values:
 
-- A string containing the product id.
-- A `storeProduct` from the `getOfferings` result: e.g. `offerings.current.annual.storeProduct`
-- A `package` from the `getOfferings` result: e.g. `offerings.current.annual`
+- `code`: A string containing the product id.
+- `product`: From the `getOfferings` result: e.g. `offerings.current.annual.storeProduct`
+- `package`: From the `getOfferings` result: e.g. `offerings.current.annual`
+
+Additionally, the following optional parameters:
+
+- `action`: To perform a product change. Valid values: `Upgrade` or `Downgrade`
 
 ```brightscript
-Purchases().purchase("product_id", sub(result, error)
+Purchases().purchase({ code: "product_id" }, sub(result, error)
   ' error will be present if the transaction could not be finished
   if error <> invalid
     if result <> invalid and result.userCancelled = true

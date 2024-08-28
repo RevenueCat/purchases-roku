@@ -9,28 +9,51 @@ function PurchaseTests(t)
                     return { data: purchasedTransactionFixture() }
                 end function
             }
-            p = _InternalPurchases({ billing: billing })
+            p = _InternalPurchases({ billing: billing, log: TestLogger() })
             p.configuration.configure({ apiKey: Constants().TEST_API_KEY })
             p.login("mark_roku_test")
             t.addContext({ purchases: p })
         end sub)
 
         t.it("Can call purchase", sub(t)
-            result = t.purchases.purchase({ code: "product_id" })
-            result = t.purchases.purchase({ storeProduct: { code: "product_id" } })
-            result = t.purchases.purchase("product_id")
+            purchase_params = [
+                { code: "product_id" },
+                { code: "product_id", action: "Upgrade" },
+                { code: "product_id", action: "Downgrade" },
+                { package: { storeProduct: { code: "product_id" } } },
+                { package: { storeProduct: { code: "product_id" } }, action: "Upgrade" },
+                { package: { storeProduct: { code: "product_id" } }, action: "Downgrade" },
+                { product: { code: "product_id" } },
+                { product: { code: "product_id" }, action: "Upgrade" },
+                { product: { code: "product_id" }, action: "Downgrade" }
+            ]
+            for each params in purchase_params
+                result = t.purchases.purchase(params)
+                t.assert.isValid(result, "Purchase result error")
+                t.assert.isInvalid(result.error, "Unexpected error")
+                data = result.data
+                t.assert.isValid(data, "Purchase data error")
+                transaction = data.transaction
+                t.assert.isValid(transaction, "Transaction error")
 
+                subscriber = data.subscriber
+                assertSubscriberIsValid(t, subscriber)
+            end for
+
+            result = t.purchases.purchase({})
             t.assert.isValid(result, "Purchase result error")
-            t.assert.isInvalid(result.error, "Unexpected error")
+            t.assert.isValid(result.error, "Expected error")
+            t.assert.equal(result.error.code, t.purchases.errors.purchaseInvalidError.code, "Unexpected error code")
+            t.assert.equal(result.error.message, t.purchases.errors.purchaseInvalidError.message, "Unexpected error message")
+            t.assert.isInvalid(result.data, "Unexpected data")
 
-            data = result.data
-            t.assert.isValid(data, "Purchase data error")
+            result = t.purchases.purchase({ code: "product_id", action: "Invalid" })
+            t.assert.isValid(result, "Purchase result error")
+            t.assert.isValid(result.error, "Expected error")
+            t.assert.equal(result.error.code, t.purchases.errors.purchaseInvalidError.code, "Unexpected error code")
+            t.assert.equal(result.error.message, t.purchases.errors.purchaseInvalidError.message, "Unexpected error message")
+            t.assert.isInvalid(result.data, "Unexpected data")
 
-            transaction = data.transaction
-            t.assert.isValid(transaction, "Transaction error")
-
-            subscriber = data.subscriber
-            assertSubscriberIsValid(t, subscriber)
             t.pass()
         end sub)
     end sub)

@@ -179,6 +179,11 @@ function _InternalPurchases(o = {} as object) as object
     end if
 
     ERRORS = {
+        purchaseInvalidError: {
+            message: "One or more of the arguments provided are invalid."
+            code: 4
+            codeName: "PURCHASE_INVALID"
+        },
         invalidSubscriberAttributesError: {
             message: "One or more of the attributes sent could not be saved."
             code: 21
@@ -253,8 +258,7 @@ function _InternalPurchases(o = {} as object) as object
             port = CreateObject("roMessagePort")
             store = CreateObject("roChannelStore")
             store.SetMessagePort(port)
-            ' store.SetOrder([{ code: inputArgs.code, qty: inputArgs.qty }], { action: "Upgrade" })
-            store.SetOrder([{ code: inputArgs.code, qty: 1 }])
+            store.SetOrder([{ code: inputArgs.code, qty: 1 }], { action: inputArgs.action })
             store.DoOrder()
             msg = wait(0, port)
             if (type(msg) = "roChannelStoreEvent")
@@ -674,21 +678,30 @@ function _InternalPurchases(o = {} as object) as object
         purchase: function(inputArgs = {}) as object
             m.configuration.assert()
             code = ""
-            valueType = type(inputArgs)
+            action = ""
+            if inputArgs.action <> invalid
+                if inputArgs.action <> "Upgrade" and inputArgs.action <> "Downgrade"
+                    m.log.error("Ivalid action in purchase")
+                    return {
+                        error: m.errors.purchaseInvalidError
+                    }
+                end if
+                action = inputArgs.action
+            end if
             if inputArgs.code <> invalid
                 code = inputArgs.code
-            else if inputArgs.storeProduct <> invalid and inputArgs.storeProduct.code <> invalid
-                code = inputArgs.storeProduct.code
-            else if valueType = "roString" or valueType = "String"
-                code = inputArgs
+            else if inputArgs.package <> invalid and inputArgs.package.storeProduct <> invalid and inputArgs.package.storeProduct.code <> invalid
+                code = inputArgs.package.storeProduct.code
+            else if inputArgs.product <> invalid and inputArgs.product.code <> invalid
+                code = inputArgs.product.code
             end if
             if code = "" then
                 m.log.error("Ivalid product identifier in purchase")
                 return {
-                    error: m.errors.configurationError
+                    error: m.errors.purchaseInvalidError
                 }
             end if
-            result = m.billing.purchase({ code: code })
+            result = m.billing.purchase({ code: code, action: action })
 
             if result.error <> invalid
                 if result.error.code = 2
