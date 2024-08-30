@@ -18,8 +18,8 @@ sub init()
                 print "offerings"; offerings.current
                 if error = invalid
                     ' Purchase the annual product of the current offering
-                    if offerings.current <> invalid and offerings.current.annual <> invalid
-                        Purchases().purchase(offerings.current.annual, sub(result, error)
+                    if offerings.current <> invalid and offerings.current.monthly <> invalid
+                        Purchases().purchase({ package: offerings.current.monthly, action: "Upgrade" }, sub(result, error)
                             if error = invalid
                                 print "Purchase successful"
                                 print FormatJson(result.transaction)
