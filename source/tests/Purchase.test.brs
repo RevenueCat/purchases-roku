@@ -7,6 +7,9 @@ function PurchaseTests(t)
                         throw "Unexpected product ID"
                     end if
                     return { data: purchasedTransactionFixture() }
+                end function,
+                getAllPurchases: function()
+                    return { data: purchaseHistoryFixture() }
                 end function
             }
             p = _InternalPurchases({ billing: billing, log: TestLogger() })
@@ -54,6 +57,14 @@ function PurchaseTests(t)
             t.assert.equal(result.error.message, t.purchases.errors.purchaseInvalidError.message, "Unexpected error message")
             t.assert.isInvalid(result.data, "Unexpected data")
 
+            t.pass()
+        end sub)
+
+        t.it("Can syncPurchases", sub(t)
+            result = t.purchases.syncPurchases()
+            t.assert.isValid(result, "SyncPurchases result error")
+            t.assert.isInvalid(result.error, "Unexpected error")
+            assertSubscriberIsValid(t, result.data)
             t.pass()
         end sub)
     end sub)

@@ -299,6 +299,18 @@ Purchases().setAttributes({ "my attribute": "my value" }, sub(success, error)
 end sub)
 ```
 
+## Sync Purchases
+
+This method will post all purchases associated with the current Roku account to RevenueCat and become associated with the current User ID.
+It should only be used if you're migrating from using your own Roku Pay implementation and want to track previous purchases in RevenueCat
+
+```brightscript
+' subscriber: The current subscriber info
+' error: Will be present if there was an error during the process
+Purchases().syncPurchases(sub(subscriber, error)
+end sub)
+```
+
 ## Tying everything together
 
 For most apps, the usage of the SDK would look like this:
