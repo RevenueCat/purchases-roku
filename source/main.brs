@@ -4,7 +4,6 @@ sub RunUserInterface(args as object)
 
     #if runTests
         print "Running tests"
-        m.global = {}
         runTests()
         return
     #end if
