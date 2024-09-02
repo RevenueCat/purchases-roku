@@ -21,6 +21,9 @@ function Purchases() as object
             purchase: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
                 m._internal.invoke("purchase", inputArgs, callbackFunc)
             end sub,
+            syncPurchases: sub(callbackFunc = invalid as dynamic)
+                m._internal.invoke("syncPurchases", {}, callbackFunc)
+            end sub,
             configure: sub(inputArgs = {} as object)
                 m._internal.configuration.configure(inputArgs)
             end sub,
@@ -547,6 +550,11 @@ function _InternalPurchases(o = {} as object) as object
                 free_trial_duration = transaction.freeTrialQuantity.ToStr() + " " + transaction.freeTrialType
             end if
 
+            price = transaction.total
+            if price = invalid
+                price = transaction.cost
+            end if
+
             result = _fetch({
                 url: m.urls().postReceipt,
                 headers: m.headers(),
@@ -555,7 +563,7 @@ function _InternalPurchases(o = {} as object) as object
                     fetch_token: transaction.purchaseId,
                     app_user_id: app_user_id,
                     product_id: transaction.code,
-                    price: transaction.amount,
+                    price: price,
                     intro_duration: introductory_duration,
                     trial_duration: free_trial_duration,
                     introductory_price: introductory_price,
@@ -725,6 +733,24 @@ function _InternalPurchases(o = {} as object) as object
                     subscriber: m.buildSubscriber(result.data)
                 }
             }
+        end function,
+        syncPurchases: function() as object
+            m.configuration.assert()
+            result = m.billing.getAllPurchases()
+            if result.error <> invalid
+                return result
+            end if
+            purchases = result.data
+            for each purchase in purchases
+                result = m.api.postReceipt({
+                    userId: m.appUserId(),
+                    transaction: purchase,
+                })
+                if result.error <> invalid
+                    return result
+                end if
+            end for
+            return m.getCustomerInfo()
         end function,
         getOfferings: function(inputArgs = {}) as object
             m.configuration.assert()
