@@ -13,4 +13,4 @@ splash_min_time=1000
 
 supports_input_launch=1
 
-bs_const=blockBk2BkDownUpgrade=false
+bs_const=blockBk2BkDownUpgrade=false;runTests=false
