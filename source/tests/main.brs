@@ -8,6 +8,8 @@ function runTests() as void
         tap: tapInstance
     }
 
+    m.global = { isRunningRevenueCatTests: true }
+
     results = roca(args).describe("Tests", sub(t)
         ConfigurationTests(t)
         CustomerInfoTests(t)
