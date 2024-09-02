@@ -35,15 +35,13 @@ function assertSubscriberIsValid(t, subscriber)
         t.assert.isValid(subscriber.latestExpirationDate, "latestExpirationDate error")
     end if
     t.assert.isValid(subscriber.nonSubscriptionTransactions, "nonSubscriptionTransactions error")
-    for each entry in subscriber.nonSubscriptionTransactions.Items()
-        transactions = entry.value
-        for each transaction in transactions
-            t.assert.isValid(transaction.isSandbox, "nonSubscriptionTransactions isSandbox error")
-            t.assert.isValid(transaction.originalPurchaseDate, "nonSubscriptionTransactions originalPurchaseDate error")
-            t.assert.isValid(transaction.purchaseDate, "nonSubscriptionTransactions purchaseDate error")
-            t.assert.isValid(transaction.store, "nonSubscriptionTransactions store error")
-            t.assert.isValid(transaction.storeTransactionIdentifier, "nonSubscriptionTransactions storeTransactionIdentifier error")
-            t.assert.isValid(transaction.transactionIdentifier, "nonSubscriptionTransactions transactionIdentifier error")
-        end for
+    for each transaction in subscriber.nonSubscriptionTransactions
+        t.assert.isValid(transaction.isSandbox, "nonSubscriptionTransactions isSandbox error")
+        t.assert.isValid(transaction.originalPurchaseDate, "nonSubscriptionTransactions originalPurchaseDate error")
+        t.assert.isValid(transaction.purchaseDate, "nonSubscriptionTransactions purchaseDate error")
+        t.assert.isValid(transaction.store, "nonSubscriptionTransactions store error")
+        t.assert.isValid(transaction.storeTransactionIdentifier, "nonSubscriptionTransactions storeTransactionIdentifier error")
+        t.assert.isValid(transaction.transactionIdentifier, "nonSubscriptionTransactions transactionIdentifier error")
+        t.assert.isValid(transaction.productIdentifier, "nonSubscriptionTransactions productIdentifier error")
     end for
 end function

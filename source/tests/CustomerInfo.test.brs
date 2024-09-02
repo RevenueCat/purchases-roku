@@ -42,6 +42,7 @@ function customerInfoTests(t)
             })
             t.assert.isValid(result, "CustomerInfo result error")
             t.assert.isInvalid(result.error, "Unexpected error")
+            t.assert.equal(result.data, true, "Unexpected data")
             t.pass()
         end sub)
 
