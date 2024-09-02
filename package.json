@@ -13,8 +13,9 @@
     "brighterscript-formatter": "^1.7.1"
   },
   "scripts": {
-    "tests": "zip -FS -9r roku-deploy.zip source/ components images/ manifest && yarn run brs-cli roku-deploy.zip",
-    "deploy": "roku-deploy",
+    "tests": "sh scripts/runLocal.sh",
+    "deviceTests": "bash scripts/runDevice.sh tests",
+    "device": "bash scripts/runDevice.sh",
     "lint": "bslint --checkUsage",
     "checkFormat": "bsfmt 'source/**/*.brs' 'components/**/*.brs' --check",
     "format": "bsfmt 'source/**/*.brs' 'components/**/*.brs' --write"

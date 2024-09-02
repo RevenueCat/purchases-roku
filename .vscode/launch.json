@@ -1,22 +1,46 @@
 {
-    "version": "0.0.1",
-    "configurations": [
-        {
-            "name": "BrightScript Debug: Launch",
-            "type": "brightscript",
-            "request": "launch",
-            "envFile": "${workspaceFolder}/.env",
-            "host": "${env:ROKU_IP_ADDRESS}",
-            "password": "${env:ROKU_PASSWORD}",
-            "rootDir": "${workspaceFolder}",
-            "stopDebuggerOnAppExit": true,
-            "files": [
-                "manifest",
-                "source/**/*.*",
-                "components/**/*.*",
-                "images/**/*.*",
-                "config.json"
-            ],
-        }
-    ]
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "BrightScript Debug: Launch",
+      "type": "brightscript",
+      "request": "launch",
+      "envFile": "${workspaceFolder}/.env",
+      "host": "${env:ROKU_IP_ADDRESS}",
+      "password": "${env:ROKU_PASSWORD}",
+      "rootDir": "${workspaceFolder}",
+      "stopDebuggerOnAppExit": true,
+      "files": [
+        "manifest",
+        "source/**/*.*",
+        "components/**/*.*",
+        "images/**/*.*",
+        "config.json"
+      ]
+    },
+    {
+      "name": "BrightScript Debug: Run Tests",
+      "type": "brightscript",
+      "request": "launch",
+      "envFile": "${workspaceFolder}/.env",
+      "host": "${env:ROKU_IP_ADDRESS}",
+      "password": "${env:ROKU_PASSWORD}",
+      "rootDir": "${workspaceFolder}",
+      "enableDebuggerAutoRecovery": true,
+      "stopDebuggerOnAppExit": true,
+      "enableVariablesPanel": false,
+      "injectRaleTrackerTask": false,
+      "enableDebugProtocol": false,
+      "files": [
+        "manifest",
+        "source/**/*.*",
+        "components/**/*.*",
+        "images/**/*.*",
+        "config.json"
+      ],
+      "bsConst": {
+        "runTests": true
+      }
+    },
+  ]
 }

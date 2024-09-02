@@ -3,14 +3,17 @@ function Purchases() as object
         if m.global = invalid then
             throw "The RevenueCat SDK can only be called from SceneGraph components where the m.global object is available."
         end if
-        if m.global.isRunningRevenueCatTests = invalid
+
+        #if runTests
+            task = invalid
+        #else
             task = m.global.getScene().findNode("purchasesTask")
             if task = invalid then
                 task = m.global.getScene().createChild("PurchasesTask")
                 task.id = "purchasesTask"
                 m.global.addFields({ revenueCatSDKConfig: {} })
             end if
-        end if
+        #end if
         m.context = {}
 
         configuration = _InternalPurchases_Configuration({ global: m.global })

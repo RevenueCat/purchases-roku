@@ -2,11 +2,12 @@
 sub RunUserInterface(args as object)
     screen = CreateObject("roSGScreen")
 
-    if screen = invalid then
+    #if runTests
         print "Running tests"
+        m.global = {}
         runTests()
         return
-    end if
+    #end if
 
     m.port = CreateObject("roMessagePort")
     screen.setMessagePort(m.port)
