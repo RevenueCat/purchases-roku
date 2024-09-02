@@ -130,18 +130,17 @@ The subscriber object is returned from different APIs. Here's an example of what
   lastSeen: <Component: roDateTime>
   latestExpirationDate: <Component: roDateTime>
   managementUrl: invalid
-  nonSubscriptionTransactions: {
-    "my_product_id": [
-      {
-          isSandbox: false
-          originalPurchaseDate: <Component: roDateTime>
-          purchaseDate: <Component: roDateTime>
-          store: "roku"
-          storeTransactionIdentifier: "XXXXXXX"
-          transactionIdentifier: "XXXXXXX"
-      }
-    ]
-  }
+  nonSubscriptionTransactions: [
+    {
+        isSandbox: false
+        originalPurchaseDate: <Component: roDateTime>
+        purchaseDate: <Component: roDateTime>
+        store: "roku"
+        storeTransactionIdentifier: "XXXXXXX"
+        transactionIdentifier: "XXXXXXX"
+        productIdentifier: "my_product_id"
+    }
+  ]
   originalAppUserId: "$RCAnonymousID:XXXXXXXXXXXXXXXX"
   originalApplicationVersion: "1.0"
   originalPurchaseDate: <Component: roDateTime>

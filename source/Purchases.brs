@@ -874,22 +874,20 @@ function _InternalPurchases(o = {} as object) as object
                     activeSubscriptions.push(entry.key)
                 end if
             end for
-            nonSubscriptionTransactions = {}
+            nonSubscriptionTransactions = []
             for each entry in subscriber.non_subscriptions.Items()
-                allTransactions = []
                 for each transaction in entry.value
-                    allTransactions.push({
+                    nonSubscriptionTransactions.push({
                         purchaseDate: m.buildDateFromString(transaction.purchase_date),
                         originalPurchaseDate: m.buildDateFromString(transaction.original_purchase_date),
                         transactionIdentifier: transaction.id,
                         storeTransactionIdentifier: transaction.store_transaction_id,
                         store: transaction.store,
                         isSandbox: transaction.is_sandbox,
+                        productIdentifier: entry.key,
                     })
                 end for
-                productIdentifier = m.buildProductId(entry.key, entry.value)
                 allPurchasedProductIds.push(productIdentifier)
-                nonSubscriptionTransactions.AddReplace(productIdentifier, allTransactions)
             end for
             latestExpirationDate = invalid
             for each item in allExpirationDatesByProduct.Items()
