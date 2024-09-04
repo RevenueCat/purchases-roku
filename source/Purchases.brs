@@ -190,6 +190,11 @@ function _InternalPurchases(o = {} as object) as object
             code: 4
             codeName: "PURCHASE_INVALID"
         },
+        invalidAppUserIdError: {
+            message: "The app user id is not valid."
+            code: 14
+            codeName: "INVALID_APP_USER_ID"
+        },
         invalidSubscriberAttributesError: {
             message: "One or more of the attributes sent could not be saved."
             code: 21
@@ -622,14 +627,14 @@ function _InternalPurchases(o = {} as object) as object
             if userId = invalid
                 m.log.error("Missing userId in logIn")
                 return {
-                    error: m.errors.configurationError
+                    error: m.errors.invalidAppUserIdError
                 }
             end if
             valueType = type(userId)
             if valueType <> "roString" and valueType <> "String" then
                 m.log.error("Invalid userId in logIn")
                 return {
-                    error: m.errors.configurationError
+                    error: m.errors.invalidAppUserIdError
                 }
             end if
             currentUserID = m.appUserId()
