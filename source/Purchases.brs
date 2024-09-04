@@ -624,7 +624,7 @@ function _InternalPurchases(o = {} as object) as object
         end function,
         logIn: function(userId as string) as object
             m.configuration.assert()
-            if userId = invalid
+            if userId = invalid or userId = ""
                 m.log.error("Missing userId in logIn")
                 return {
                     error: m.errors.invalidAppUserIdError
