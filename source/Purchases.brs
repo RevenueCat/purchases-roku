@@ -515,7 +515,7 @@ function _InternalPurchases(o = {} as object) as object
                 key = attribute.key
                 value = attribute.value
                 attributes[key] = {
-                    "updated_at_ms": CreateObject("roDateTime").AsSeconds() * 1000,
+                    "updated_at_ms": CreateObject("roDateTime").AsSeconds() * 1000&,
                     "value": value
                 }
             end for
