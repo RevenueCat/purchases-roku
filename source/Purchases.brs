@@ -190,6 +190,11 @@ function _InternalPurchases(o = {} as object) as object
             code: 4
             codeName: "PURCHASE_INVALID"
         },
+        invalidAppUserIdError: {
+            message: "The app user id is not valid."
+            code: 14
+            codeName: "INVALID_APP_USER_ID"
+        },
         invalidSubscriberAttributesError: {
             message: "One or more of the attributes sent could not be saved."
             code: 21
@@ -515,7 +520,9 @@ function _InternalPurchases(o = {} as object) as object
                 key = attribute.key
                 value = attribute.value
                 attributes[key] = {
-                    "updated_at_ms": CreateObject("roDateTime").AsSeconds() * 1000,
+                    ' The & here casts the Integer to LongInteger so it can handle larger numbers like timestamps in milliseconds without overflowing
+                    ' https://developer.roku.com/docs/references/brightscript/language/expressions-variables-types.md#numeric-literals
+                    "updated_at_ms": CreateObject("roDateTime").AsSeconds() * 1000&,
                     "value": value
                 }
             end for
@@ -619,17 +626,17 @@ function _InternalPurchases(o = {} as object) as object
         end function,
         logIn: function(userId as string) as object
             m.configuration.assert()
-            if userId = invalid
+            if userId = invalid or userId = ""
                 m.log.error("Missing userId in logIn")
                 return {
-                    error: m.errors.configurationError
+                    error: m.errors.invalidAppUserIdError
                 }
             end if
             valueType = type(userId)
             if valueType <> "roString" and valueType <> "String" then
                 m.log.error("Invalid userId in logIn")
                 return {
-                    error: m.errors.configurationError
+                    error: m.errors.invalidAppUserIdError
                 }
             end if
             currentUserID = m.appUserId()
