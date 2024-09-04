@@ -520,6 +520,8 @@ function _InternalPurchases(o = {} as object) as object
                 key = attribute.key
                 value = attribute.value
                 attributes[key] = {
+                    ' The & here casts the Integer to LongInteger so it can handle larger numbers like timestamps in milliseconds without overflowing
+                    ' https://developer.roku.com/docs/references/brightscript/language/expressions-variables-types.md#numeric-literals
                     "updated_at_ms": CreateObject("roDateTime").AsSeconds() * 1000&,
                     "value": value
                 }
