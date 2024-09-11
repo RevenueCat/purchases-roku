@@ -2,7 +2,7 @@ Welcome to the RevenueCat Roku SDK.
 
 RevenueCat's Roku support is in its early stages. All feedback and issue reports are welcomed.
 
-Check out our latest documentation on [how to configure products in Roku](https://docs.revenuecat.com/getting-started/entitlements/roku-products) and [how to use the Roku SDK](https://docs.revenuecat.com/getting-started/installation/roku).
+Check out our latest documentation on [how to configure products in Roku](https://www.revenuecat.com/docs/getting-started/entitlements/roku-products) and [how to use the Roku SDK](https://www.revenuecat.com/docs/getting-started/installation/roku).
 
 # How to setup your Roku developer account
 
