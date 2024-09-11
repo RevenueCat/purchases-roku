@@ -1,4 +1,3 @@
-'********** Copyright 2020 Roku Corp.  All Rights Reserved. **********
 sub RunUserInterface(args as object)
     screen = CreateObject("roSGScreen")
 

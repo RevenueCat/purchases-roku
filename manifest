@@ -1,7 +1,7 @@
-title=RSB Sample22
+title=RevenueCat Sample
 major_version=1
 minor_version=0
-build_version=005
+build_version=0
 
 mm_icon_focus_hd=pkg:/images/icon_focus_hd.png
 mm_icon_focus_sd=pkg:/images/icon_focus_sd.png

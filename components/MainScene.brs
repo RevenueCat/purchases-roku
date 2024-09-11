@@ -1,48 +1,38 @@
-'********** Copyright 2020 Roku Corp.  All Rights Reserved. **********
-
 function init()
-    configAA = ReadConfigFile("pkg:/config.json")
-    m.groups = GetProductGroups(configAA)
-    ' setupCommandList(m.groups)''
-
-    ' create billing component node'
-    m.billing = createObject("roSGNode", "Billing")
-
-    ' Set product screen as the initial screen'
-    m.productScreen = m.top.FindNode("productScreen")
-    m.productScreen.billing = m.billing
-    m.productScreen.groups = m.groups
-    'm.productScreen.ObserveField("itemSelected", "onProductSelected")
-    'm.purchaseGrid = m.top.FindNode("purchaseGrid")
-    'm.purchaseGrid.ObserveField("itemSelected", "onPurchaseSelected")
-    'm.userGrid = m.top.FindNode("userGrid")
-    'm.userGrid.ObserveField("itemSelected", "onUserItemSelected")
-
-    m.purchaseScreen = m.top.FindNode("purchaseScreen")
-    m.purchaseScreen.visible = false
-
-    m.top.observeField("orders", "startAsyncDoOrder")
-
-    m.InputEventTask = createObject("roSgNode", "InputEventTask")
-    m.InputEventTask.observefield("inputEventData", "OnInputEventDataReceived")
-    m.InputEventTask.control = "RUN"
-
-    'm.billing.callFunc("getProductList", {})
-    'm.billing.callFunc("getPurchaseList", {})
-end function
-
-function onKeyEvent(key as string, press as boolean) as boolean
-    Purchases().getOfferings({}, sub (e)
-        print "Offerings Main Scene"
-    end sub)
-    handled = false
-    if press
-        ? "Scene - Key pressed: " + key
+    ' Initialise the SDK
+    if Purchases().isConfigured() <> true
+        Purchases().configure({
+            "apiKey": "roku_ltxwuCGexxpozfEKvNcnQKSpzmT",
+            ' "apiKey": "roku_rYIAQxwuNBGwZmldIjYahxSwHDk",
+            ' "proxyUrl": "http://192.168.1.34:8000/v1/",
+        })
     end if
-    return handled
+    ' Login the user
+    Purchases().logIn("mark_roku_test", sub(subscriber, error)
+        Purchases().setAttributes({ "email": "foo@example.com" })
+        ' Get current offerings
+        if error = invalid
+            Purchases().getOfferings(sub(offerings, error)
+                print "offerings"; offerings.current
+                if error = invalid
+                    ' Purchase the annual product of the current offering
+                    if offerings.current <> invalid and offerings.current.annual <> invalid
+                        Purchases().purchase({ package: offerings.current.annual, action: "Downgrade" }, sub(result, error)
+                            if error = invalid
+                                print "Purchase successful"
+                                print FormatJson(result.transaction)
+                                print result.subscriber
+                                print result
+                                print error
+                            else
+                                print "Purchase failed"
+                                print error
+                                print result
+                            end if
+                        end sub)
+                    end if
+                end if
+            end sub)
+        end if
+    end sub)
 end function
-
-sub OnInputEventDataReceived(event as dynamic)
-    data = event.GetData()
-    ' print(data)
-end sub
