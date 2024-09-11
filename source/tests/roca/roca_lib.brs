@@ -1,3 +1,7 @@
+' Extracted from: https://github.com/hulu/roca/tree/main/docs
+' This code has been modified to run using https://github.com/lvcabral/brs-engine instead of https://github.com/sjbarag/brs
+' License: Apache-2.0
+
 ' Initializes a Roca unit test instance with the arguments provided by the Roca CLI.
 ' Should only be called once per test file, accepting the arguments passed into `main`.
 '

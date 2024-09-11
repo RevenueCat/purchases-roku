@@ -964,6 +964,9 @@ function _InternalPurchases(o = {} as object) as object
     }
 end function
 
+' Extracted from: https://github.com/briandunnington/roku-fetch
+' License: MIT
+
 ' options: {
 '     url:     [req] string - http or https url
 '     timeout: [opt] int - ms to wait before timeout (defaults to 0 (no timeout))
