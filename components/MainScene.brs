@@ -2,9 +2,8 @@ function init()
     ' Initialise the SDK
     if Purchases().isConfigured() <> true
         Purchases().configure({
-            "apiKey": "roku_ltxwuCGexxpozfEKvNcnQKSpzmT",
-            ' "apiKey": "roku_rYIAQxwuNBGwZmldIjYahxSwHDk",
-            ' "proxyUrl": "http://192.168.1.34:8000/v1/",
+            "apiKey": "roku_XXXXXXXXX",
+            ' "proxyUrl": "",
         })
     end if
     ' Login the user
