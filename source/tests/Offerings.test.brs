@@ -32,6 +32,9 @@ function OfferingsTests(t)
             t.assert.isValid(package, "Available package error")
             t.assert.isValid(package.identifier, "Identifier error")
             t.assert.isValid(package.packageType, "Package type error")
+            t.assert.isValid(package.presentedOfferingContext, "Presented offering context error")
+            t.assert.isValid(package.presentedOfferingContext.offeringIdentifier, "Presented offering identifier error")
+            t.assert.equal(package.presentedOfferingContext.offeringIdentifier, offerings.current.identifier, "Presented offering identifier error")
 
             product = package.storeProduct
             t.assert.isValid(product, "Product error")
