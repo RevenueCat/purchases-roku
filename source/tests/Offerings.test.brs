@@ -72,5 +72,27 @@ function OfferingsTests(t)
             t.assert.isTrue(t.purchases.log.hasLoggedMessage(t.purchases.strings.FAILED_TO_FETCH_PRODUCTS), "Expected error not logged")
             t.pass()
         end sub)
+
+        t.it("Placements", sub(t)
+            configurePurchases({ t: t, products: catalogFixture() })
+            result = t.purchases.getOfferings()
+            offerings = result.data
+            t.assert.isValid(result.data, "Offerings result error")
+            t.assert.isValid(offerings.currentOfferingForPlacement("my_placement"), "Current offering for placement error")
+            t.assert.isInvalid(offerings.currentOfferingForPlacement("invalid_placement"), "Unexpected current offering for placement")
+
+            ' Inject a fallback offering id, and a placement whose offering id does not exist
+            offerings.placements.fallback_offering_id = "marks-premium"
+            offerings.placements.offering_ids_by_placement["valid_placement"] = "invalid_offering"
+            ' The valid placement should still return a valid offering
+            t.assert.isValid(offerings.currentOfferingForPlacement("my_placement"), "Current offering for placement error")
+            ' The inexistent placement should return invalid
+            t.assert.isInvalid(offerings.currentOfferingForPlacement("invalid_placement"), "Unexpected current offering for placement")
+            ' The placement with the invalid offering id should return the fallback offering
+            fallback_offering = offerings.currentOfferingForPlacement("valid_placement")
+            t.assert.isValid(fallback_offering, "Unexpected current offering for placement")
+            t.assert.equal(fallback_offering.identifier, "marks-premium", "Unexpected current offering for placement")
+            t.pass()
+        end sub)
     end sub)
 end function

@@ -548,8 +548,12 @@ function _InternalPurchases(o = {} as object) as object
             transaction = inputArgs.transaction
             app_user_id = inputArgs.userId
             presentedOfferingIdentifier = invalid
+            presentedPlacementIdentifier = invalid
+            appliedTargetingRule = invalid
             if inputArgs.presentedOfferingContext <> invalid
                 presentedOfferingIdentifier = inputArgs.presentedOfferingContext.offeringIdentifier
+                presentedPlacementIdentifier = inputArgs.presentedOfferingContext.placementIdentifier
+                appliedTargetingRule = inputArgs.presentedOfferingContext.targetingRule
             end if
 
             introductory_duration = invalid
@@ -582,6 +586,8 @@ function _InternalPurchases(o = {} as object) as object
                     trial_duration: free_trial_duration,
                     introductory_price: introductory_price,
                     presented_offering_identifier: presentedOfferingIdentifier,
+                    presented_placement_identifier: presentedPlacementIdentifier,
+                    applied_targeting_rule: appliedTargetingRule,
                 })
             })
             if result.ok
@@ -783,7 +789,9 @@ function _InternalPurchases(o = {} as object) as object
             offerings = result.data
             current_offering_id = offerings.current_offering_id
             current_offering = invalid
-            all_offerings = []
+            placements = offerings.placements
+            targeting = offerings.targeting
+            all_offerings = {}
             result = m.billing.getProductsById()
 
             if result.error <> invalid
@@ -800,12 +808,19 @@ function _InternalPurchases(o = {} as object) as object
                 annual = invalid
                 monthly = invalid
                 availablePackages = []
+                is_current_offering = false
+                if offering.identifier = current_offering_id
+                    is_current_offering = true
+                end if
+                presentedOfferingContext = {
+                    offeringIdentifier: offering.identifier,
+                }
+                if is_current_offering
+                    presentedOfferingContext["targettingRule"] = targeting
+                end if
                 for each package in offering.packages
                     product = productsByID[package.platform_product_identifier]
                     if product = invalid then continue for
-                    presentedOfferingContext = {
-                        offeringIdentifier: offering.identifier,
-                    }
                     if package.identifier = "$rc_annual"
                         annual = {
                             identifier: package.identifier,
@@ -839,8 +854,8 @@ function _InternalPurchases(o = {} as object) as object
                     monthly: monthly,
                     availablePackages: availablePackages,
                 }
-                all_offerings.push(o)
-                if offering.identifier = current_offering_id
+                all_offerings[offering.identifier] = o
+                if is_current_offering
                     current_offering = o
                 end if
             end for
@@ -848,6 +863,40 @@ function _InternalPurchases(o = {} as object) as object
                 data: {
                     current: current_offering,
                     all: all_offerings,
+                    placements: placements,
+                    targeting: targeting,
+                    _offeringWithPlacement: sub(inputArgs = {}) as object
+                        offering = inputArgs.offering
+                        if offering = invalid then return invalid
+                        for each package in offering.availablePackages
+                            package.presentedOfferingContext["targetingRule"] = inputArgs.targetingRule
+                            package.presentedOfferingContext["placementIdentifier"] = inputArgs.placementIdentifier
+                        end for
+                        return offering
+                    end sub,
+                    currentOfferingForPlacement: sub(placement_id as string) as object
+                        if m.placements = invalid then return invalid
+                        placement_offering_id = m.placements.offering_ids_by_placement[placement_id]
+                        offering = invalid
+                        if placement_offering_id <> invalid
+                            offering = m.all[placement_offering_id]
+                            ' if the placement exists but we could not find its offering, return the fallback offering
+                            if offering = invalid
+                                fallback_offering_id = m.placements.fallback_offering_id
+                                if fallback_offering_id <> invalid
+                                    fallback_offering = m.all[fallback_offering_id]
+                                    if fallback_offering <> invalid
+                                        offering = fallback_offering
+                                    end if
+                                end if
+                            end if
+                        end if
+                        return m._offeringWithPlacement({
+                            offering: offering,
+                            placementIdentifier: placement_id
+                            targetingRule: m.targeting
+                        })
+                    end sub
                 }
             }
         end function,
