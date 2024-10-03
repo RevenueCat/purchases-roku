@@ -816,7 +816,7 @@ function _InternalPurchases(o = {} as object) as object
                     offeringIdentifier: offering.identifier,
                 }
                 if is_current_offering
-                    presentedOfferingContext["targettingRule"] = targeting
+                    presentedOfferingContext["targetingRule"] = targeting
                 end if
                 for each package in offering.packages
                     product = productsByID[package.platform_product_identifier]
