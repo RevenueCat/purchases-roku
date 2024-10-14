@@ -723,9 +723,7 @@ function _InternalPurchases(o = {} as object) as object
             else if inputArgs.package <> invalid and inputArgs.package.storeProduct <> invalid and inputArgs.package.storeProduct.code <> invalid
                 code = inputArgs.package.storeProduct.code
                 if inputArgs.package.presentedOfferingContext <> invalid
-                    presentedOfferingContext = {
-                        offeringIdentifier: inputArgs.package.presentedOfferingContext.offeringIdentifier,
-                    }
+                    presentedOfferingContext = inputArgs.package.presentedOfferingContext
                 end if
             else if inputArgs.product <> invalid and inputArgs.product.code <> invalid
                 code = inputArgs.product.code
