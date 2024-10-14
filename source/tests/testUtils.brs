@@ -1,3 +1,80 @@
+function configurePurchases(inputArgs = {} as object)
+    fixtureProducts = catalogFixture()
+    if inputArgs.products <> invalid
+        fixtureProducts = inputArgs.products
+    end if
+
+    billing = {
+        fixtureProducts: fixtureProducts,
+        getProductsById: function()
+            productsByID = {}
+            for each product in m.fixtureProducts
+                productsByID[product.code] = product
+            end for
+            return { data: productsByID }
+        end function,
+        getAllPurchases: function()
+            return { data: purchaseHistoryFixture() }
+        end function,
+        purchase: function(inputArgs = {})
+            return { data: purchasedTransactionFixture() }
+        end function,
+    }
+    p = _InternalPurchases({ billing: billing, log: TestLogger() })
+
+    ' By default, mock the API calls
+    if inputArgs.mockApi <> false
+        for each item in mockApi().Items()
+            p.api[item.key] = item.value
+        end for
+    end if
+
+    ' Override the implementations of the API object if provided
+    if inputArgs.api <> invalid
+        for each item in inputArgs.api.Items()
+            p.api[item.key] = item.value
+        end for
+    end if
+
+    p.configuration.configure({ apiKey: Constants().TEST_API_KEY })
+    inputArgs.t.addContext({ purchases: p })
+end function
+
+function mockApi()
+    return {
+        getOfferings: function(inputArgs = {}) as object
+            m.getOfferingsInputArgs = inputArgs
+            return {
+                data: offeringsFixture()
+            }
+        end function,
+        postReceipt: function(inputArgs = {}) as object
+            m.postReceiptInputArgs = inputArgs
+            return {
+                data: subscriberFixture()
+            }
+        end function,
+        getCustomerInfo: function(inputArgs = {})
+            m.getCustomerInfoInputArgs = inputArgs
+            return {
+                data: subscriberFixture()
+            }
+        end function,
+        identify: function(inputArgs = {})
+            m.identifyInputArgs = inputArgs
+            return {
+                data: subscriberFixture()
+            }
+        end function,
+        postSubscriberAttributes: function(inputArgs = {})
+            m.postSubscriberAttributesInputArgs = inputArgs
+            return {
+                data: true
+            }
+        end function,
+    }
+end function
+
 function assertSubscriberIsValid(t, subscriber)
     t.assert.isValid(subscriber, "Subscriber error")
     t.assert.isValid(subscriber.entitlements, "Entitlements error")

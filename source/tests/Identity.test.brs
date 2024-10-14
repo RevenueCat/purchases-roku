@@ -1,10 +1,8 @@
 function IdentityTests(t)
     t.describe("Identity Tests", sub(t)
         t.beforeEach(sub(t)
-            p = _InternalPurchases({ log: TestLogger() })
-            p.configuration.configure({ apiKey: Constants().TEST_API_KEY })
-            p.registry.clear()
-            t.addContext({ purchases: p })
+            configurePurchases({ t: t })
+            t.purchases.registry.clear()
         end sub)
 
         t.it("Generates anonymous user ids", sub(t)
