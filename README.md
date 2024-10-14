@@ -267,6 +267,18 @@ Purchases().getOfferings(sub(offerings, error)
 end sub)
 ```
 
+You can also retrieve the current offering for a placement identifier. Use this to access offerings defined by targeting placements configured in the RevenueCat dashboard:
+
+```brightscript
+Purchases().getOfferings(sub(offerings, error)
+  if error <> invalid
+    print "There was an error fetching offerings
+  else
+    my_offering = offerings.currentOfferingForPlacement("my_placement")
+  end if
+end sub)
+```
+
 ## Subscriber logIn and logOut
 
 ```brightscript
