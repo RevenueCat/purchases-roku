@@ -259,9 +259,9 @@ Purchases().getOfferings(sub(offerings, error)
     '       }
     '     ],
     '   },
-    '   all: [
-    '     ' An array for all offerings, with the same schema as above
-    '   ]
+    '   all: {
+    '     ' An associative array of all the offerings, keyed by their identifier
+    '   }
     ' }
   end if
 end sub)
