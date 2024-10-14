@@ -12,10 +12,8 @@ function PurchaseTests(t)
                     return { data: purchaseHistoryFixture() }
                 end function
             }
-            p = _InternalPurchases({ billing: billing, log: TestLogger() })
-            p.configuration.configure({ apiKey: Constants().TEST_API_KEY })
-            p.login("mark_roku_test")
-            t.addContext({ purchases: p })
+            configurePurchases({ t: t, billing: billing })
+            t.purchases.login("mark_roku_test")
         end sub)
 
         t.it("Can call purchase", sub(t)

@@ -785,10 +785,6 @@ function _InternalPurchases(o = {} as object) as object
                 return result
             end if
             offerings = result.data
-            current_offering_id = offerings.current_offering_id
-            current_offering = invalid
-            placements = offerings.placements
-            targeting = offerings.targeting
             all_offerings = {}
             result = m.billing.getProductsById()
 
@@ -807,15 +803,9 @@ function _InternalPurchases(o = {} as object) as object
                 monthly = invalid
                 availablePackages = []
                 is_current_offering = false
-                if offering.identifier = current_offering_id
-                    is_current_offering = true
-                end if
                 presentedOfferingContext = {
                     offeringIdentifier: offering.identifier,
                 }
-                if is_current_offering
-                    presentedOfferingContext["targetingRule"] = targeting
-                end if
                 for each package in offering.packages
                     product = productsByID[package.platform_product_identifier]
                     if product = invalid then continue for
@@ -853,34 +843,73 @@ function _InternalPurchases(o = {} as object) as object
                     availablePackages: availablePackages,
                 }
                 all_offerings[offering.identifier] = o
-                if is_current_offering
-                    current_offering = o
-                end if
             end for
             return {
                 data: {
-                    current: current_offering,
+                    current: sub() as object
+                        if m._currentOfferingId = invalid then return invalid
+                        currentOffering = m.all[m._currentOfferingId]
+                        if currentOffering <> invalid
+                            return m._offeringWithTargeting({
+                                offering: currentOffering,
+                                targetingRule: m._targeting
+                            })
+                        end if
+                    end sub,
                     all: all_offerings,
-                    placements: placements,
-                    targeting: targeting,
-                    _offeringWithPlacement: sub(inputArgs = {}) as object
-                        offering = inputArgs.offering
+                    _currentOfferingId: offerings.current_offering_id,
+                    _placements: offerings.placements,
+                    _targeting: offerings.targeting,
+                    _deepCopy: function(original as Object) as Object
+                        if original = invalid then
+                            return invalid
+                        end if
+                        if type(original) <> "roAssociativeArray" and type(original) <> "roArray"
+                            return original
+                        end if
+                        if type(original) = "roAssociativeArray"
+                            copy = {}
+                            for each key in original
+                                value = original[key]
+                                copy[key] = m._deepCopy(value)
+                            end for
+                            return copy
+                        end if
+                        if type(original) = "roArray"
+                            copy = []
+                            for each value in original
+                                copy.push(m._deepCopy(value))
+                            end for
+                            return copy
+                        end if
+                        return original
+                    end function
+                    _offeringWithTargeting: sub(inputArgs = {}) as object
+                        offering = m._deepCopy(inputArgs.offering)
                         if offering = invalid then return invalid
                         for each package in offering.availablePackages
                             package.presentedOfferingContext["targetingRule"] = inputArgs.targetingRule
                             package.presentedOfferingContext["placementIdentifier"] = inputArgs.placementIdentifier
                         end for
+                        if offering.annual <> invalid
+                            offering.annual.presentedOfferingContext["targetingRule"] = inputArgs.targetingRule
+                            offering.annual.presentedOfferingContext["placementIdentifier"] = inputArgs.placementIdentifier
+                        end if
+                        if offering.monthly <> invalid
+                            offering.monthly.presentedOfferingContext["targetingRule"] = inputArgs.targetingRule
+                            offering.monthly.presentedOfferingContext["placementIdentifier"] = inputArgs.placementIdentifier
+                        end if
                         return offering
                     end sub,
                     currentOfferingForPlacement: sub(placement_id as string) as object
-                        if m.placements = invalid then return invalid
-                        placement_offering_id = m.placements.offering_ids_by_placement[placement_id]
+                        if m._placements = invalid then return invalid
+                        placement_offering_id = m._placements.offering_ids_by_placement[placement_id]
                         offering = invalid
                         if placement_offering_id <> invalid
                             offering = m.all[placement_offering_id]
                             ' if the placement exists but we could not find its offering, return the fallback offering
                             if offering = invalid
-                                fallback_offering_id = m.placements.fallback_offering_id
+                                fallback_offering_id = m._placements.fallback_offering_id
                                 if fallback_offering_id <> invalid
                                     fallback_offering = m.all[fallback_offering_id]
                                     if fallback_offering <> invalid
@@ -889,10 +918,10 @@ function _InternalPurchases(o = {} as object) as object
                                 end if
                             end if
                         end if
-                        return m._offeringWithPlacement({
+                        return m._offeringWithTargeting({
                             offering: offering,
                             placementIdentifier: placement_id
-                            targetingRule: m.targeting
+                            targetingRule: m._targeting
                         })
                     end sub
                 }

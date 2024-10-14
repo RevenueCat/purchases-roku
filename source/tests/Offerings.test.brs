@@ -1,40 +1,27 @@
-function configurePurchases(inputArgs = {} as object)
-    billing = {
-        fixtureProducts: inputArgs.products,
-        getProductsById: function()
-            productsByID = {}
-            for each product in m.fixtureProducts
-                productsByID[product.code] = product
-            end for
-            return { data: productsByID }
-        end function
-    }
-    p = _InternalPurchases({ billing: billing, log: TestLogger(), })
-    p.configuration.configure({ apiKey: Constants().TEST_API_KEY })
-    inputArgs.t.addContext({ purchases: p })
-end function
-
 function OfferingsTests(t)
     t.describe("Offerings Tests", sub(t)
+        t.beforeEach(sub(t)
+            configurePurchases({ t: t })
+        end sub)
+
         t.it("Can call getOfferings", sub(t)
-            configurePurchases({ t: t, products: catalogFixture() })
             result = t.purchases.getOfferings()
             t.assert.isValid(result, "Offerings result error")
             t.assert.isInvalid(result.error, "Unexpected error")
             offerings = result.data
             t.assert.isValid(offerings, "Offerings data error")
-            t.assert.isValid(offerings.current, "Current offerings error")
-            t.assert.isValid(offerings.current.availablePackages, "Available packages error")
-            t.assert.equal(offerings.current.availablePackages.count(), 2, "Available packages count error")
+            t.assert.isValid(offerings.current(), "Current offerings error")
+            t.assert.isValid(offerings.current().availablePackages, "Available packages error")
+            t.assert.equal(offerings.current().availablePackages.count(), 2, "Available packages count error")
 
-            package = offerings.current.availablePackages[0]
+            package = offerings.current().availablePackages[0]
 
             t.assert.isValid(package, "Available package error")
             t.assert.isValid(package.identifier, "Identifier error")
             t.assert.isValid(package.packageType, "Package type error")
             t.assert.isValid(package.presentedOfferingContext, "Presented offering context error")
             t.assert.isValid(package.presentedOfferingContext.offeringIdentifier, "Presented offering identifier error")
-            t.assert.equal(package.presentedOfferingContext.offeringIdentifier, offerings.current.identifier, "Presented offering identifier error")
+            t.assert.equal(package.presentedOfferingContext.offeringIdentifier, offerings.current().identifier, "Presented offering identifier error")
 
             product = package.storeProduct
             t.assert.isValid(product, "Product error")
@@ -62,37 +49,102 @@ function OfferingsTests(t)
             t.assert.equal(offerings.all.count(), 1, "All offerings count error")
 
             t.assert.isFalse(t.purchases.log.hasLoggedMessage(t.purchases.strings.FAILED_TO_FETCH_PRODUCTS), "Unexpected error logged")
-
-            t.pass()
         end sub)
 
         t.it("Logs an error when catalog returns invalid products", sub(t)
             configurePurchases({ t: t, products: wronglyConfiguredCatalogFixture() })
             result = t.purchases.getOfferings()
             t.assert.isTrue(t.purchases.log.hasLoggedMessage(t.purchases.strings.FAILED_TO_FETCH_PRODUCTS), "Expected error not logged")
-            t.pass()
         end sub)
 
-        t.it("Placements", sub(t)
-            configurePurchases({ t: t, products: catalogFixture() })
-            result = t.purchases.getOfferings()
-            offerings = result.data
-            t.assert.isValid(result.data, "Offerings result error")
-            t.assert.isValid(offerings.currentOfferingForPlacement("my_placement"), "Current offering for placement error")
-            t.assert.isInvalid(offerings.currentOfferingForPlacement("invalid_placement"), "Unexpected current offering for placement")
+        t.it("Returns an invalid offering if the placement does not exist", sub(t)
+            offerings = t.purchases.getOfferings().data
+            t.assert.isInvalid(offerings.currentOfferingForPlacement("invalid_placement"), "Expected an invalid offering for placement")
+        end sub)
 
+        t.it("Returns the fallback offering when the placement exists but its offering id doesnt", sub(t)
+            offerings = t.purchases.getOfferings().data
             ' Inject a fallback offering id, and a placement whose offering id does not exist
-            offerings.placements.fallback_offering_id = "marks-premium"
-            offerings.placements.offering_ids_by_placement["valid_placement"] = "invalid_offering"
+            offerings._placements.fallback_offering_id = "marks-premium"
+            offerings._placements.offering_ids_by_placement["valid_placement"] = "invalid_offering"
             ' The valid placement should still return a valid offering
-            t.assert.isValid(offerings.currentOfferingForPlacement("my_placement"), "Current offering for placement error")
-            ' The inexistent placement should return invalid
-            t.assert.isInvalid(offerings.currentOfferingForPlacement("invalid_placement"), "Unexpected current offering for placement")
+            t.assert.isValid(offerings.currentOfferingForPlacement("my_placement"), "Expected a valid offering for placement")
+            ' The inexistent placement should still return invalid
+            t.assert.isInvalid(offerings.currentOfferingForPlacement("invalid_placement"), "Expected an invalid offering for placement")
             ' The placement with the invalid offering id should return the fallback offering
             fallback_offering = offerings.currentOfferingForPlacement("valid_placement")
-            t.assert.isValid(fallback_offering, "Unexpected current offering for placement")
-            t.assert.equal(fallback_offering.identifier, "marks-premium", "Unexpected current offering for placement")
-            t.pass()
+            t.assert.isValid(fallback_offering, "Expected an invalid offering for placement")
+            t.assert.equal(fallback_offering.identifier, "marks-premium", "Expected a valid offering for placement")
+        end sub)
+
+        t.it("Sends targeting rules when purchased via offerings.currentOfferingForPlacement", sub(t)
+            offerings = t.purchases.getOfferings().data
+
+            placement_offering = offerings.currentOfferingForPlacement("my_placement")
+            presentedOfferingContext = placement_offering.annual.presentedOfferingContext
+            t.assert.isValid(presentedOfferingContext, "presentedOfferingContext error")
+            t.assert.isValid(presentedOfferingContext.targetingRule, "targetingRule error")
+            t.assert.isValid(presentedOfferingContext.placementIdentifier, "placementIdentifier error")
+
+            t.purchases.purchase({ package: placement_offering.annual })
+            presentedOfferingContext = t.purchases.api.postReceiptInputArgs.presentedOfferingContext
+            t.assert.isValid(presentedOfferingContext, "presentedOfferingContext error")
+            t.assert.isValid(presentedOfferingContext.targetingRule, "targetingRule error")
+            t.assert.isValid(presentedOfferingContext.placementIdentifier, "placementIdentifier error")
+        end sub)
+
+        t.it("Sends targeting rules when purchased via offerings.current", sub(t)
+            offerings = t.purchases.getOfferings().data
+
+            current_offering = offerings.current()
+            presentedOfferingContext = current_offering.annual.presentedOfferingContext
+            t.assert.isValid(presentedOfferingContext, "presentedOfferingContext error")
+            t.assert.isValid(presentedOfferingContext.targetingRule, "targetingRule error")
+            t.assert.isInvalid(presentedOfferingContext.placementIdentifier, "placementIdentifier error")
+
+            t.purchases.purchase({ package: current_offering.annual })
+            presentedOfferingContext = t.purchases.api.postReceiptInputArgs.presentedOfferingContext
+            t.assert.isValid(presentedOfferingContext, "presentedOfferingContext error")
+            t.assert.isValid(presentedOfferingContext.targetingRule, "targetingRule error")
+            t.assert.isInvalid(presentedOfferingContext.placementIdentifier, "placementIdentifier error")
+        end sub)
+
+        t.it("Does not send targeting rules when purchased via offerings.all", sub(t)
+            offerings = t.purchases.getOfferings().data
+
+            offering = offerings.all["marks-premium"]
+            presentedOfferingContext = offering.annual.presentedOfferingContext
+            t.assert.isValid(presentedOfferingContext, "presentedOfferingContext error")
+            t.assert.isInvalid(presentedOfferingContext.targetingRule, "targetingRule error")
+            t.assert.isInvalid(presentedOfferingContext.placementIdentifier, "placementIdentifier error")
+
+            t.purchases.purchase({ package: offering.annual })
+            presentedOfferingContext = t.purchases.api.postReceiptInputArgs.presentedOfferingContext
+            t.assert.isValid(presentedOfferingContext, "presentedOfferingContext error")
+            t.assert.isInvalid(presentedOfferingContext.targetingRule, "targetingRule error")
+            t.assert.isInvalid(presentedOfferingContext.placementIdentifier, "placementIdentifier error")
+        end sub)
+
+        t.it("Sends correct targeting data when fetched via offerings.currentOfferingForPlacement, and then purchased via offerings.all", sub(t)
+            offerings = t.purchases.getOfferings().data
+
+            placement_offering = offerings.currentOfferingForPlacement("my_placement")
+            presentedOfferingContext = placement_offering.annual.presentedOfferingContext
+            t.assert.isValid(presentedOfferingContext, "presentedOfferingContext error")
+            t.assert.isValid(presentedOfferingContext.targetingRule, "targetingRule error")
+            t.assert.isValid(presentedOfferingContext.placementIdentifier, "placementIdentifier error")
+
+            offering = offerings.all["marks-premium"]
+            presentedOfferingContext = offering.annual.presentedOfferingContext
+            t.assert.isValid(presentedOfferingContext, "presentedOfferingContext error")
+            t.assert.isInvalid(presentedOfferingContext.targetingRule, "targetingRule error")
+            t.assert.isInvalid(presentedOfferingContext.placementIdentifier, "placementIdentifier error")
+
+            t.purchases.purchase({ package: offering.annual })
+            presentedOfferingContext = t.purchases.api.postReceiptInputArgs.presentedOfferingContext
+            t.assert.isValid(presentedOfferingContext, "presentedOfferingContext error")
+            t.assert.isInvalid(presentedOfferingContext.targetingRule, "targetingRule error")
+            t.assert.isInvalid(presentedOfferingContext.placementIdentifier, "placementIdentifier error")
         end sub)
     end sub)
 end function

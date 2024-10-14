@@ -166,8 +166,8 @@ The error model constains two fields: `code` and `message`
 As a parameter to the `purchase()` method, you can pass an associative array containing one of the following values:
 
 - `code`: A string containing the product id.
-- `product`: From the `getOfferings` result: e.g. `offerings.current.annual.storeProduct`
-- `package`: From the `getOfferings` result: e.g. `offerings.current.annual`
+- `product`: From the `getOfferings` result: e.g. `offerings.current().annual.storeProduct`
+- `package`: From the `getOfferings` result: e.g. `offerings.current().annual`
 
 Additionally,you can pass the following optional parameters:
 
@@ -223,7 +223,7 @@ Purchases().getOfferings(sub(offerings, error)
     ' The offerings object
 
     ' {
-    '   current: {
+    '   current(): {
     '     identifier: "my_id",
     '     metadata: { }, ' Metadata set in the Offering configuration
     '     description: "Offering description",
@@ -356,7 +356,7 @@ sub fetchOfferings()
     if error = invalid
       ' Use offerings to build your paywall UI.
       ' Then call purchaseProduct with the one selected by the user
-      purchaseProduct(offerings.current.annual)
+      purchaseProduct(offerings.current().annual)
     end if
   end sub)
 end sub
