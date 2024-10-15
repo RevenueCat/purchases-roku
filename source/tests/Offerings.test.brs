@@ -62,6 +62,13 @@ function OfferingsTests(t)
             t.assert.isInvalid(offerings.currentOfferingForPlacement("invalid_placement"), "Expected an invalid offering for placement")
         end sub)
 
+        t.it("Returns an invalid offering if there are no placements", sub(t)
+            offerings = t.purchases.getOfferings().data
+            ' Renomve the placements
+            offerings._placements.offering_ids_by_placement = invalid
+            t.assert.isInvalid(offerings.currentOfferingForPlacement("my_placement"), "Expected an invalid offering for placement")
+        end sub)
+
         t.it("Returns the fallback offering when the placement exists but its offering id doesnt", sub(t)
             offerings = t.purchases.getOfferings().data
             ' Inject a fallback offering id, and a placement whose offering id does not exist

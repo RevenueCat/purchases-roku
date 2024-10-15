@@ -903,6 +903,7 @@ function _InternalPurchases(o = {} as object) as object
                     end sub,
                     currentOfferingForPlacement: sub(placement_id as string) as object
                         if m._placements = invalid then return invalid
+                        if m._placements.offering_ids_by_placement = invalid then return invalid
                         placement_offering_id = m._placements.offering_ids_by_placement[placement_id]
                         offering = invalid
                         if placement_offering_id <> invalid
