@@ -208,7 +208,7 @@ function _InternalPurchases(o = {} as object) as object
     }
 
     STRINGS = {
-        FAILED_TO_FETCH_PRODUCTS: "Failed to fetch products from the Roku store. This can happen if billing testing is not correctly consfigured. Please review the 'How to setup a channel' section of the README."
+        FAILED_TO_FETCH_PRODUCTS: "Failed to fetch products from the Roku store. This can happen if billing testing is not correctly configured or a Beta Channel expired. Please review the 'How to setup a channel' section of the README."
     }
 
     configuration = _InternalPurchases_Configuration({ global: _internal_global })
