@@ -802,7 +802,6 @@ function _InternalPurchases(o = {} as object) as object
                 annual = invalid
                 monthly = invalid
                 availablePackages = []
-                is_current_offering = false
                 presentedOfferingContext = {
                     offeringIdentifier: offering.identifier,
                 }
