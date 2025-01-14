@@ -330,7 +330,12 @@ function subscriberFixture(inputArgs = {}) as object
                     "grace_period_expires_date": invalid,
                     "product_identifier": "mark_premium",
                     "purchase_date": "2023-12-21T18:00:00Z"
-                }
+                },
+                "lifetime": {
+                    "grace_period_expires_date": invalid,
+                    "product_identifier": "mark_premium",
+                    "purchase_date": "2023-12-21T18:00:00Z"
+                },
             },
             "first_seen": "2023-04-04T23:11:37Z",
             "last_seen": "2024-01-10T16:25:15Z",
