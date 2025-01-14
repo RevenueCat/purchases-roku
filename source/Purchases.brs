@@ -946,6 +946,11 @@ function _InternalPurchases(o = {} as object) as object
             hasBillingIssues = purchase.billingIssueDetectedAt <> invalid
             return (isPromo or isLifetime or hasUnsubscribed or hasBillingIssues) = false
         end function,
+        isActive: function(entitlement, requestDate) as boolean
+            expirationDate = m.buildDateFromString(entitlement.expires_date)
+            if expirationDate = invalid then return true
+            return expirationDate.asSeconds() > requestDate.asSeconds()
+        end function,
         buildSubscriber: function(response as object) as object
             requestDate = m.buildDateFromString(response.request_date)
             subscriber = response.subscriber
@@ -958,7 +963,6 @@ function _InternalPurchases(o = {} as object) as object
                 entitlement = entry.value
                 expirationDate = m.buildDateFromString(entitlement.expires_date)
                 purchaseDate = m.buildDateFromString(entitlement.purchase_date)
-                isActive = expirationDate.asSeconds() > requestDate.asSeconds()
                 purchase = subscriber.subscriptions[entitlement.product_identifier]
                 if purchase = invalid
                     purchase = subscriber.non_subscriptions[entitlement.product_identifier]
@@ -968,7 +972,7 @@ function _InternalPurchases(o = {} as object) as object
                 end if
                 value = {
                     identifier: entry.key,
-                    isActive: isActive,
+                    isActive: m.isActive(entitlement, requestDate),
                     willRenew: m.willRenew(purchase),
                     expirationDate: expirationDate,
                     productIdentifier: m.buildProductId(entitlement.product_identifier, purchase),
