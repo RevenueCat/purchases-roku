@@ -951,28 +951,42 @@ function _InternalPurchases(o = {} as object) as object
             if expirationDate = invalid then return true
             return expirationDate.asSeconds() > requestDate.asSeconds()
         end function,
+        latestPurchase: function(product_identifier, subscriber) as object
+            purchase = subscriber.subscriptions[product_identifier]
+            if purchase = invalid
+                nonSubscriptionPurchases = subscriber.non_subscriptions[product_identifier]
+                if nonSubscriptionPurchases <> invalid
+                    ' Find the latest purchase date
+                    nonSubscriptionPurchases.sortBy("purchase_date")
+                    if nonSubscriptionPurchases.Count() > 0
+                        purchase = nonSubscriptionPurchases[nonSubscriptionPurchases.Count() - 1]
+                    end if
+                    ' Default values for fields not present in non-subscription purchases
+                    purchase.period_type = "normal"
+                    purchase.ownership_type = "PURCHASED"
+                end if
+            end if
+            if purchase = invalid
+                m.log.error("Could not find purchase for entitlement with product_id" + product_identifier)
+            end if
+            return purchase
+        end function,
         buildSubscriber: function(response as object) as object
             requestDate = m.buildDateFromString(response.request_date)
             subscriber = response.subscriber
             firstSeen = m.buildDateFromString(subscriber.first_seen)
             lastSeen = m.buildDateFromString(subscriber.last_seen)
-
             allEntitlements = {}
             activeEntitlements = {}
             for each entry in subscriber.entitlements.Items()
                 entitlement = entry.value
                 expirationDate = m.buildDateFromString(entitlement.expires_date)
                 purchaseDate = m.buildDateFromString(entitlement.purchase_date)
-                purchase = subscriber.subscriptions[entitlement.product_identifier]
-                if purchase = invalid
-                    purchase = subscriber.non_subscriptions[entitlement.product_identifier]
-                end if
-                if purchase = invalid
-                    m.log.error("Could not find purchase for entitlement with product_id" + entitlement.product_identifier)
-                end if
+                purchase = m.latestPurchase(entitlement.product_identifier, subscriber)
+                isActive = m.isActive(entitlement, requestDate)
                 value = {
                     identifier: entry.key,
-                    isActive: m.isActive(entitlement, requestDate),
+                    isActive: isActive,
                     willRenew: m.willRenew(purchase),
                     expirationDate: expirationDate,
                     productIdentifier: m.buildProductId(entitlement.product_identifier, purchase),

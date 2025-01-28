@@ -333,7 +333,7 @@ function subscriberFixture(inputArgs = {}) as object
                 },
                 "lifetime": {
                     "grace_period_expires_date": invalid,
-                    "product_identifier": "mark_premium",
+                    "product_identifier": "com.revenuecat.product.tip",
                     "purchase_date": "2023-12-21T18:00:00Z"
                 },
             },
@@ -343,13 +343,21 @@ function subscriberFixture(inputArgs = {}) as object
             "non_subscriptions": {
                 "com.revenuecat.product.tip": [
                     {
+                        "purchase_date": "2024-02-11T00:03:28Z",
+                        "original_purchase_date": "2022-03-10T00:04:28Z",
+                        "id": "17459f5ffd",
+                        "store_transaction_id": "340001090153260",
+                        "store": "app_store",
+                        "is_sandbox": false
+                    },
+                    {
                         "purchase_date": "2022-02-11T00:03:28Z",
                         "original_purchase_date": "2022-03-10T00:04:28Z",
                         "id": "17459f5ff7",
                         "store_transaction_id": "340001090153249",
                         "store": "app_store",
                         "is_sandbox": false
-                    }
+                    },
                 ]
             },
             "original_app_user_id": "asdf",
