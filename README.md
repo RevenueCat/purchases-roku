@@ -294,12 +294,12 @@ Purchases().logOut(sub(subscriber, error)
 end sub)
 ```
 
-## Getting subscriber info
+## Getting customer info
 
 ```brightscript
 ' subscriber: The current subscriber info
 ' error: Will be present if there was an error during the process
-Purchases().getSubscriberInfo(sub(subscriber, error)
+Purchases().getCustomerInfo(sub(subscriber, error)
 end sub)
 ```
 
