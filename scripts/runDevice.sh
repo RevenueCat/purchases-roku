@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Get the Roku device IP address and password from the .env file
-source .envvironment variable
+source .env
 export ROKU_IP_ADDRESS=$ROKU_IP_ADDRESS
 export ROKU_PASSWORD=$ROKU_PASSWORD
 
