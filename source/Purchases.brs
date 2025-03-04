@@ -629,10 +629,10 @@ function _InternalPurchases(o = {} as object) as object
         setUserId: function(userId as string) as void
             m.identityManager.setUserId(userId)
         end function,
-        appUserId: function() as string
+        appUserId: function(inputArgs = {}) as string
             return m.identityManager.appUserId()
         end function,
-        isAnonymous: function() as boolean
+        isAnonymous: function(inputArgs = {}) as boolean
             return m.identityManager.isAnonymous()
         end function,
         logIn: function(userId as string) as object
@@ -760,7 +760,7 @@ function _InternalPurchases(o = {} as object) as object
                 }
             }
         end function,
-        syncPurchases: function() as object
+        syncPurchases: function(inputArgs = {}) as object
             m.configuration.assert()
             result = m.billing.getAllPurchases()
             if result.error <> invalid
