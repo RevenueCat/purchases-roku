@@ -68,6 +68,9 @@ function Purchases() as object
             getOfferings: sub(callbackFunc = invalid as dynamic)
                 m._internal.invoke("getOfferings", {}, callbackFunc)
             end sub,
+            currentOfferingForPlacement: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
+                m._internal.invoke("currentOfferingForPlacement", inputArgs, callbackFunc)
+            end sub,
             _internal: {
                 configuration: configuration,
                 callbackContext: m.context,
@@ -843,90 +846,99 @@ function _InternalPurchases(o = {} as object) as object
                 }
                 all_offerings[offering.identifier] = o
             end for
+
+            ' Find the current offering and make a copy of it with targeting information
+            current = invalid
+            if offerings.current_offering_id <> invalid
+                currentOffering = all_offerings[offerings.current_offering_id]
+                if currentOffering <> invalid
+                    current = m._offeringWithTargeting({
+                        offering: currentOffering,
+                        targetingRule: offerings.targeting
+                    })
+                end if
+            end if
+
             return {
                 data: {
-                    current: sub() as object
-                        if m._currentOfferingId = invalid then return invalid
-                        currentOffering = m.all[m._currentOfferingId]
-                        if currentOffering <> invalid
-                            return m._offeringWithTargeting({
-                                offering: currentOffering,
-                                targetingRule: m._targeting
-                            })
-                        end if
-                    end sub,
+                    current: current,
                     all: all_offerings,
-                    _currentOfferingId: offerings.current_offering_id,
                     _placements: offerings.placements,
                     _targeting: offerings.targeting,
-                    _deepCopy: function(original as Object) as Object
-                        if original = invalid then
-                            return invalid
-                        end if
-                        if type(original) <> "roAssociativeArray" and type(original) <> "roArray"
-                            return original
-                        end if
-                        if type(original) = "roAssociativeArray"
-                            copy = {}
-                            for each key in original
-                                value = original[key]
-                                copy[key] = m._deepCopy(value)
-                            end for
-                            return copy
-                        end if
-                        if type(original) = "roArray"
-                            copy = []
-                            for each value in original
-                                copy.push(m._deepCopy(value))
-                            end for
-                            return copy
-                        end if
-                        return original
-                    end function
-                    _offeringWithTargeting: sub(inputArgs = {}) as object
-                        offering = m._deepCopy(inputArgs.offering)
-                        if offering = invalid then return invalid
-                        for each package in offering.availablePackages
-                            package.presentedOfferingContext["targetingRule"] = inputArgs.targetingRule
-                            package.presentedOfferingContext["placementIdentifier"] = inputArgs.placementIdentifier
-                        end for
-                        if offering.annual <> invalid
-                            offering.annual.presentedOfferingContext["targetingRule"] = inputArgs.targetingRule
-                            offering.annual.presentedOfferingContext["placementIdentifier"] = inputArgs.placementIdentifier
-                        end if
-                        if offering.monthly <> invalid
-                            offering.monthly.presentedOfferingContext["targetingRule"] = inputArgs.targetingRule
-                            offering.monthly.presentedOfferingContext["placementIdentifier"] = inputArgs.placementIdentifier
-                        end if
-                        return offering
-                    end sub,
-                    currentOfferingForPlacement: sub(placement_id as string) as object
-                        if m._placements = invalid then return invalid
-                        if m._placements.offering_ids_by_placement = invalid then return invalid
-                        placement_offering_id = m._placements.offering_ids_by_placement[placement_id]
-                        offering = invalid
-                        if placement_offering_id <> invalid
-                            offering = m.all[placement_offering_id]
-                            ' if the placement exists but we could not find its offering, return the fallback offering
-                            if offering = invalid
-                                fallback_offering_id = m._placements.fallback_offering_id
-                                if fallback_offering_id <> invalid
-                                    fallback_offering = m.all[fallback_offering_id]
-                                    if fallback_offering <> invalid
-                                        offering = fallback_offering
-                                    end if
-                                end if
-                            end if
-                        end if
-                        return m._offeringWithTargeting({
-                            offering: offering,
-                            placementIdentifier: placement_id
-                            targetingRule: m._targeting
-                        })
-                    end sub
                 }
             }
         end function,
+        currentOfferingForPlacement: sub(inputArgs = {}) as object
+            offerings = inputArgs.offerings
+            placement_id = inputArgs.placementId
+
+            if offerings = invalid then return invalid
+            if placement_id = invalid then return invalid
+
+            if offerings._placements = invalid then return invalid
+            if offerings._placements.offering_ids_by_placement = invalid then return invalid
+            placement_offering_id = offerings._placements.offering_ids_by_placement[placement_id]
+            offering = invalid
+            if placement_offering_id <> invalid
+                offering = offerings.all[placement_offering_id]
+                ' if the placement exists but we could not find its offering, return the fallback offering
+                if offering = invalid
+                    fallback_offering_id = offerings._placements.fallback_offering_id
+                    if fallback_offering_id <> invalid
+                        fallback_offering = offerings.all[fallback_offering_id]
+                        if fallback_offering <> invalid
+                            offering = fallback_offering
+                        end if
+                    end if
+                end if
+            end if
+            return m._offeringWithTargeting({
+                offering: offering,
+                placementIdentifier: placement_id
+                targetingRule: offerings._targeting
+            })
+        end sub,
+        _deepCopy: function(original as Object) as Object
+            if original = invalid then
+                return invalid
+            end if
+            if type(original) <> "roAssociativeArray" and type(original) <> "roArray"
+                return original
+            end if
+            if type(original) = "roAssociativeArray"
+                copy = {}
+                for each key in original
+                    value = original[key]
+                    copy[key] = m._deepCopy(value)
+                end for
+                return copy
+            end if
+            if type(original) = "roArray"
+                copy = []
+                for each value in original
+                    copy.push(m._deepCopy(value))
+                end for
+                return copy
+            end if
+            return original
+        end function,
+        _offeringWithTargeting: sub(inputArgs = {}) as object
+            offering = m._deepCopy(inputArgs.offering)
+            if offering = invalid then return invalid
+            for each package in offering.availablePackages
+                package.presentedOfferingContext["targetingRule"] = inputArgs.targetingRule
+                package.presentedOfferingContext["placementIdentifier"] = inputArgs.placementIdentifier
+            end for
+            if offering.annual <> invalid
+                offering.annual.presentedOfferingContext["targetingRule"] = inputArgs.targetingRule
+                offering.annual.presentedOfferingContext["placementIdentifier"] = inputArgs.placementIdentifier
+            end if
+            if offering.monthly <> invalid
+                offering.monthly.presentedOfferingContext["targetingRule"] = inputArgs.targetingRule
+                offering.monthly.presentedOfferingContext["placementIdentifier"] = inputArgs.placementIdentifier
+            end if
+            return offering
+        end sub,
         buildDateFromString: function(dateString)
             if dateString = invalid then return invalid
             date = CreateObject("roDateTime")
