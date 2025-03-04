@@ -10,18 +10,18 @@ function OfferingsTests(t)
             t.assert.isInvalid(result.error, "Unexpected error")
             offerings = result.data
             t.assert.isValid(offerings, "Offerings data error")
-            t.assert.isValid(offerings.current(), "Current offerings error")
-            t.assert.isValid(offerings.current().availablePackages, "Available packages error")
-            t.assert.equal(offerings.current().availablePackages.count(), 2, "Available packages count error")
+            t.assert.isValid(offerings.current, "Current offerings error")
+            t.assert.isValid(offerings.current.availablePackages, "Available packages error")
+            t.assert.equal(offerings.current.availablePackages.count(), 2, "Available packages count err")
 
-            package = offerings.current().availablePackages[0]
+            package = offerings.current.availablePackages[0]
 
             t.assert.isValid(package, "Available package error")
             t.assert.isValid(package.identifier, "Identifier error")
             t.assert.isValid(package.packageType, "Package type error")
             t.assert.isValid(package.presentedOfferingContext, "Presented offering context error")
             t.assert.isValid(package.presentedOfferingContext.offeringIdentifier, "Presented offering identifier error")
-            t.assert.equal(package.presentedOfferingContext.offeringIdentifier, offerings.current().identifier, "Presented offering identifier error")
+            t.assert.equal(package.presentedOfferingContext.offeringIdentifier, offerings.current.identifier, "Presented offering identifier error")
 
             product = package.storeProduct
             t.assert.isValid(product, "Product error")
@@ -59,14 +59,14 @@ function OfferingsTests(t)
 
         t.it("Returns an invalid offering if the placement does not exist", sub(t)
             offerings = t.purchases.getOfferings().data
-            t.assert.isInvalid(offerings.currentOfferingForPlacement("invalid_placement"), "Expected an invalid offering for placement")
+            t.assert.isInvalid(t.purchases.currentOfferingForPlacement({ offerings: offerings, placementId: "invalid_placement" }), "Expected an invalid offering for placement")
         end sub)
 
         t.it("Returns an invalid offering if there are no placements", sub(t)
             offerings = t.purchases.getOfferings().data
             ' Renomve the placements
             offerings._placements.offering_ids_by_placement = invalid
-            t.assert.isInvalid(offerings.currentOfferingForPlacement("my_placement"), "Expected an invalid offering for placement")
+            t.assert.isInvalid(t.purchases.currentOfferingForPlacement({ offeings: offerings, placementId: "my_placement" }), "Expected an invalid offering for placement")
         end sub)
 
         t.it("Returns the fallback offering when the placement exists but its offering id doesnt", sub(t)
@@ -75,19 +75,19 @@ function OfferingsTests(t)
             offerings._placements.fallback_offering_id = "marks-premium"
             offerings._placements.offering_ids_by_placement["valid_placement"] = "invalid_offering"
             ' The valid placement should still return a valid offering
-            t.assert.isValid(offerings.currentOfferingForPlacement("my_placement"), "Expected a valid offering for placement")
+            t.assert.isValid(t.purchases.currentOfferingForPlacement({ offerings: offerings, placementId: "my_placement" }), "Expected a valid offering for placement")
             ' The inexistent placement should still return invalid
-            t.assert.isInvalid(offerings.currentOfferingForPlacement("invalid_placement"), "Expected an invalid offering for placement")
+            t.assert.isInvalid(t.purchases.currentOfferingForPlacement({ offerings: offerings, placementId: "invalid_placement" }), "Expected an invalid offering for placement")
             ' The placement with the invalid offering id should return the fallback offering
-            fallback_offering = offerings.currentOfferingForPlacement("valid_placement")
+            fallback_offering = t.purchases.currentOfferingForPlacement({ offerings: offerings, placementId: "valid_placement" })
             t.assert.isValid(fallback_offering, "Expected an invalid offering for placement")
             t.assert.equal(fallback_offering.identifier, "marks-premium", "Expected a valid offering for placement")
         end sub)
 
-        t.it("Sends targeting rules when purchased via offerings.currentOfferingForPlacement", sub(t)
+        t.it("Sends targeting rules when purchased via currentOfferingForPlacement", sub(t)
             offerings = t.purchases.getOfferings().data
 
-            placement_offering = offerings.currentOfferingForPlacement("my_placement")
+            placement_offering = t.purchases.currentOfferingForPlacement({ offerings: offerings, placementId: "my_placement" })
             presentedOfferingContext = placement_offering.annual.presentedOfferingContext
             t.assert.isValid(presentedOfferingContext, "presentedOfferingContext error")
             t.assert.isValid(presentedOfferingContext.targetingRule, "targetingRule error")
@@ -103,7 +103,7 @@ function OfferingsTests(t)
         t.it("Sends targeting rules when purchased via offerings.current", sub(t)
             offerings = t.purchases.getOfferings().data
 
-            current_offering = offerings.current()
+            current_offering = offerings.current
             presentedOfferingContext = current_offering.annual.presentedOfferingContext
             t.assert.isValid(presentedOfferingContext, "presentedOfferingContext error")
             t.assert.isValid(presentedOfferingContext.targetingRule, "targetingRule error")
@@ -132,10 +132,10 @@ function OfferingsTests(t)
             t.assert.isInvalid(presentedOfferingContext.placementIdentifier, "placementIdentifier error")
         end sub)
 
-        t.it("Sends correct targeting data when fetched via offerings.currentOfferingForPlacement, and then purchased via offerings.all", sub(t)
+        t.it("Sends correct targeting data when fetched via currentOfferingForPlacement, and then purchased via offerings.all", sub(t)
             offerings = t.purchases.getOfferings().data
 
-            placement_offering = offerings.currentOfferingForPlacement("my_placement")
+            placement_offering = t.purchases.currentOfferingForPlacement({ offerings: offerings, placementId: "my_placement" })
             presentedOfferingContext = placement_offering.annual.presentedOfferingContext
             t.assert.isValid(presentedOfferingContext, "presentedOfferingContext error")
             t.assert.isValid(presentedOfferingContext.targetingRule, "targetingRule error")
