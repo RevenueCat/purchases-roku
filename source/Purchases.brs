@@ -766,8 +766,8 @@ function _InternalPurchases(o = {} as object) as object
             if result.error <> invalid
                 return result
             end if
-            purchases = result.data
-            for each purchase in purchases
+            allPurchases = result.data
+            for each purchase in allPurchases
                 result = m.api.postReceipt({
                     userId: m.appUserId(),
                     transaction: purchase,
