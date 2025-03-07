@@ -1078,7 +1078,6 @@ function _InternalPurchases(o = {} as object) as object
                 callbackField = args.callbackID
                 m.log.debug("callbackField: " + callbackField.ToStr())
                 m.log.debug("method: " + args.method.ToStr())
-                m.log.debug("result: " + formatJson(result))
                 m.task[callbackField] = result
                 m.task.unobserveField(callbackField)
                 m.task.removeField(callbackField)
