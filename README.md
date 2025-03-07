@@ -298,11 +298,11 @@ end sub)
 
 ```brightscript
 ' isAnonymous: boolean indicating whether the current user is anonymous
-Purchases().isAnonymous(sub(isAnonymous)
+Purchases().isAnonymous(sub(isAnonymous, error)
 end sub)
 
 ' appUserId: string representing the current user ID, can be anonymous
-Purchases().appUserId(sub(appUserId)
+Purchases().appUserId(sub(appUserId, error)
 end sub)
 ```
 

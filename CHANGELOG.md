@@ -2,6 +2,7 @@
 ### 🐞 Bugfixes
 - Converted offerings.current back to a field instead of a method, and moved currentOfferingForPlacement to the top level Purchases object.
 - Fixed issue when calling isAnonymous, appUserId and syncPurchases methods.
+- Fixed an issue with the entitlement field `willRenew`.
 
 ## 0.0.3
 ### 🐞 Bugfixes
