@@ -953,9 +953,9 @@ function _InternalPurchases(o = {} as object) as object
         end function
         willRenew: function(purchase) as boolean
             isPromo = purchase.store = "promotional"
-            isLifetime = purchase.expirationDate = invalid
-            hasUnsubscribed = purchase.unsubscribeDetectedAt <> invalid
-            hasBillingIssues = purchase.billingIssueDetectedAt <> invalid
+            isLifetime = purchase.expires_date = invalid
+            hasUnsubscribed = purchase.unsubscribe_detected_at <> invalid
+            hasBillingIssues = purchase.billing_issue_detected_at <> invalid
             return (isPromo or isLifetime or hasUnsubscribed or hasBillingIssues) = false
         end function,
         isActive: function(entitlement, requestDate) as boolean
@@ -1027,7 +1027,7 @@ function _InternalPurchases(o = {} as object) as object
             end for
             activeSubscriptions = []
             for each entry in allExpirationDatesByProduct.Items()
-                if entry.value.asSeconds() > requestDate.asSeconds()
+                if entry.value <> invalid and entry.value.asSeconds() > requestDate.asSeconds()
                     activeSubscriptions.push(entry.key)
                 end if
             end for
