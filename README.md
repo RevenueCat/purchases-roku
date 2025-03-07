@@ -294,6 +294,18 @@ Purchases().logOut(sub(subscriber, error)
 end sub)
 ```
 
+## Getting the current App User ID, and checking if the current user is anonymous
+
+```brightscript
+' isAnonymous: boolean indicating whether the current user is anonymous
+Purchases().isAnonymouc(sub(isAnonymous)
+end sub)
+
+' appUserId: string representing the current user ID, can be anonymous
+Purchases().appUserId(sub(appUserId)
+end sub)
+```
+
 ## Getting customer info
 
 ```brightscript
