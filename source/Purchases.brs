@@ -670,7 +670,7 @@ function _InternalPurchases(o = {} as object) as object
         end function,
         logOut: function(inputArgs = {}) as object
             m.configuration.assert()
-            currentUserID = m.appUserId()
+            currentUserID = m.identityManager.appUserId()
             anonUserID = m.identityManager.generateAnonUserID()
             m.setUserId(anonUserID)
             result = m.api.identify({
@@ -684,7 +684,7 @@ function _InternalPurchases(o = {} as object) as object
         end function,
         getCustomerInfo: function(inputArgs = {}) as object
             m.configuration.assert()
-            result = m.api.getCustomerInfo({ userId: m.appUserId() })
+            result = m.api.getCustomerInfo({ userId: m.identityManager.appUserId() })
             if result.error <> invalid
                 return result
             end if
@@ -701,7 +701,7 @@ function _InternalPurchases(o = {} as object) as object
                 end if
             end for
 
-            result = m.api.postSubscriberAttributes({ userId: m.appUserId(), attributes: inputArgs })
+            result = m.api.postSubscriberAttributes({ userId: m.identityManager.appUserId(), attributes: inputArgs })
             if result.error <> invalid
                 return result
             end if
@@ -749,7 +749,7 @@ function _InternalPurchases(o = {} as object) as object
             transactions = result.data
 
             result = m.api.postReceipt({
-                userId: m.appUserId(),
+                userId: m.identityManager.appUserId(),
                 transaction: transactions[0],
                 presentedOfferingContext: presentedOfferingContext,
             })
@@ -772,7 +772,7 @@ function _InternalPurchases(o = {} as object) as object
             allPurchases = result.data
             for each purchase in allPurchases
                 result = m.api.postReceipt({
-                    userId: m.appUserId(),
+                    userId: m.identityManager.appUserId(),
                     transaction: purchase,
                 })
                 if result.error <> invalid
@@ -783,7 +783,7 @@ function _InternalPurchases(o = {} as object) as object
         end function,
         getOfferings: function(inputArgs = {}) as object
             m.configuration.assert()
-            result = m.api.getOfferings({ userId: m.appUserId() })
+            result = m.api.getOfferings({ userId: m.identityManager.appUserId() })
             if result.error <> invalid
                 return result
             end if

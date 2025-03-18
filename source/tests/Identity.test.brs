@@ -16,6 +16,12 @@ function IdentityTests(t)
             t.assert.isFalse(t.purchases.isAnonymous().data, "Expected non-anonymous user id")
             t.assert.equal(t.purchases.appUserId().data, "myappuserid", "Unexpected user id")
 
+            userId = t.purchases.api.identifyInputArgs.userId
+            t.assert.isTrue(type(userId) = "roString" or type(userId) = "String", "Unexpected user id type")
+            newUserId = t.purchases.api.identifyInputArgs.newUserId
+            t.assert.isTrue(type(newUserId) = "roString" or type(newUserId) = "String", "Unexpected new user id type")
+            t.assert.equal(newUserId, "myappuserid", "Unexpected new user id")
+
             t.assert.isValid(result, "Login result error")
             t.assert.isInvalid(result.error, "Unexpected error")
             assertSubscriberIsValid(t, result.data)
@@ -44,6 +50,12 @@ function IdentityTests(t)
             t.assert.isTrue(t.purchases.isAnonymous().data, "Expected anonymous user id")
             t.assert.isTrue(t.purchases.appUserId().data.startsWith("$RCAnonymousID:"), "Expected anonymous user id")
             t.assert.notEqual(t.purchases.appUserId().data, initialAnonymousId, "Unexpected user id")
+
+            userId = t.purchases.api.identifyInputArgs.userId
+            t.assert.isTrue(type(userId) = "roString" or type(userId) = "String", "Unexpected user id type")
+            t.assert.equal(userId, "myappuserid", "Unexpected old user id")
+            newUserId = t.purchases.api.identifyInputArgs.newUserId
+            t.assert.isTrue(type(newUserId) = "roString" or type(newUserId) = "String", "Unexpected new user id type")
 
             t.assert.isValid(result, "Logout result error")
             t.assert.isInvalid(result.error, "Unexpected error")
