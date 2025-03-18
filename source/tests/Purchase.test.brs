@@ -39,6 +39,11 @@ function PurchaseTests(t)
 
                 subscriber = data.subscriber
                 assertSubscriberIsValid(t, subscriber)
+
+                userId = t.purchases.api.postReceiptInputArgs.userId
+                t.assert.isTrue(type(userId) = "roString" or type(userId) = "String", "Unexpected user id type")
+                transaction = t.purchases.api.postReceiptInputArgs.transaction
+                t.assert.isValid(transaction, "Transaction error")
             end for
 
             result = t.purchases.purchase({})
@@ -63,6 +68,10 @@ function PurchaseTests(t)
             t.assert.isValid(result, "SyncPurchases result error")
             t.assert.isInvalid(result.error, "Unexpected error")
             assertSubscriberIsValid(t, result.data)
+            userId = t.purchases.api.postReceiptInputArgs.userId
+            t.assert.isTrue(type(userId) = "roString" or type(userId) = "String", "Unexpected user id type")
+            transaction = t.purchases.api.postReceiptInputArgs.transaction
+            t.assert.isValid(transaction, "Transaction error")
             t.pass()
         end sub)
     end sub)

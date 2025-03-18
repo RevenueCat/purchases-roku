@@ -14,6 +14,10 @@ function OfferingsTests(t)
             t.assert.isValid(offerings.current.availablePackages, "Available packages error")
             t.assert.equal(offerings.current.availablePackages.count(), 2, "Available packages count err")
 
+            userId = t.purchases.api.getOfferingsInputArgs.userId
+            t.assert.isTrue(type(userId) = "roString" or type(userId) = "String", "Unexpected user id type")
+            t.assert.equal(userId, t.purchases.appUserId().data, "Unexpected user id")
+
             package = offerings.current.availablePackages[0]
 
             t.assert.isValid(package, "Available package error")

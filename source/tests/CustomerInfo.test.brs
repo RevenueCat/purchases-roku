@@ -6,6 +6,10 @@ function customerInfoTests(t)
             t.purchases.login("user1")
 
             result = t.purchases.getCustomerInfo()
+            userId = t.purchases.api.getCustomerInfoInputArgs.userId
+            t.assert.isTrue(type(userId) = "roString" or type(userId) = "String", "Unexpected user id type")
+            t.assert.equal(userId, "user1", "Unexpected user id")
+
             t.assert.isValid(result, "CustomerInfo result error")
             t.assert.isInvalid(result.error, "Unexpected error")
             assertSubscriberIsValid(t, result.data)
@@ -29,6 +33,11 @@ function customerInfoTests(t)
             result = t.purchases.setAttributes({
                 email: "example@example.com"
             })
+
+            userId = t.purchases.api.postSubscriberAttributesInputArgs.userId
+            t.assert.isTrue(type(userId) = "roString" or type(userId) = "String", "Unexpected user id type")
+            t.assert.equal(userId, "user1", "Unexpected user id")
+
             t.assert.isValid(result, "CustomerInfo result error")
             t.assert.isInvalid(result.error, "Unexpected error")
             t.assert.equal(result.data, true, "Unexpected data")
