@@ -688,27 +688,6 @@ function _InternalPurchases(o = {} as object) as object
         registry: registry,
         configuration: configuration,
         identityManager: identityManager,
-        updateCustomerCache: function(customer as object) as void
-            ' save customer info to disk cache
-        end function,
-        getCustomerCache: function() as object
-            ' read customer info from disk cache if not stale
-        end function,
-        updateOfferingsCache: function(offerings as object) as void
-            ' save offerings to disk cache
-        end function,
-        getOfferingsCache: function() as object
-            ' read offerings from disk cache if not stale
-        end function,
-        setUserId: function(userId as string) as void
-            m.identityManager.setUserId(userId)
-        end function,
-        appUserId: function(inputArgs = {}) as object
-            return { data: m.identityManager.appUserId() }
-        end function,
-        isAnonymous: function(inputArgs = {}) as object
-            return { data: m.identityManager.isAnonymous() }
-        end function,
         logIn: function(userId as string) as object
             m.configuration.assert()
             if userId = invalid or userId = ""
@@ -729,7 +708,7 @@ function _InternalPurchases(o = {} as object) as object
                 _PurchasesLogger().info("User already logged in")
                 return m.getCustomerInfo()
             end if
-            m.setUserId(userId)
+            m.identityManager.setUserId(userId)
             result = m.api.identify({
                 userId: currentUserID
                 newUserId: userId
@@ -743,7 +722,7 @@ function _InternalPurchases(o = {} as object) as object
             m.configuration.assert()
             currentUserID = m.identityManager.appUserId()
             anonUserID = m.identityManager.generateAnonUserID()
-            m.setUserId(anonUserID)
+            m.identityManager.setUserId(anonUserID)
             result = m.api.identify({
                 userId: currentUserID
                 newUserId: anonUserID
