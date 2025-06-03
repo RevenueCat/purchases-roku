@@ -21,6 +21,7 @@ function Purchases() as object
         sectionName = "RevenueCat_" + appInfo.GetID()
         registry = _InternalPurchases_Registry(sectionName)
         configuration = _InternalPurchases_Configuration({ registry: registry })
+        identityManager = _InternalPurchases_IdentityManager({ registry: registry })
 
         GetGlobalAA().rc_purchasesSingleton = {
             purchase: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
@@ -32,7 +33,7 @@ function Purchases() as object
             configure: sub(inputArgs = {} as object)
                 m._internal.configuration.configure(inputArgs)
             end sub,
-            isConfigured: function() as boolean
+            isConfigured: function() as object
                 return m._internal.configuration.isConfigured()
             end function,
             setProxyURL: sub(proxyURL as string)
@@ -45,15 +46,21 @@ function Purchases() as object
                 m._internal.configuration.set({ logLevel: logLevel })
             end sub,
             logLevel: function() as string
-                logLevel = m._internal.configuration.get().logLevel
-                if logLevel = invalid then return "info"
-                return logLevel
+                return _PurchasesLogger().logLevelString()
             end function,
-            isAnonymous: sub(callbackFunc = invalid as dynamic)
-                m._internal.invoke("isAnonymous", {}, callbackFunc)
+            isAnonymous: sub(callbackFunc = invalid as dynamic) as object
+                isAnonymous = m._internal.identityManager.isAnonymous()
+                if callbackFunc <> invalid then
+                    callbackFunc(isAnonymous, invalid)
+                end if
+                return isAnonymous
             end sub,
-            appUserId: sub(callbackFunc = invalid as dynamic)
-                m._internal.invoke("appUserId", {}, callbackFunc)
+            appUserId: sub(callbackFunc = invalid as dynamic) as object
+                appUserId = m._internal.identityManager.appUserId()
+                if callbackFunc <> invalid then
+                    callbackFunc(appUserId, invalid)
+                end if
+                return appUserId
             end sub,
             logIn: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
                 m._internal.invoke("logIn", inputArgs, callbackFunc)
@@ -75,6 +82,7 @@ function Purchases() as object
             end sub,
             _internal: {
                 configuration: configuration,
+                identityManager: identityManager,
                 callbackContext: m.context,
                 setCallbackID: function(callbackFunc as dynamic) as string
                     m.task.callbackID++
@@ -194,6 +202,13 @@ function _PurchasesLogger() as object
             if level <> invalid and m.levels[level] <> invalid then return m.levels[level]
             return m.levels.info
         end function,
+        logLevelString: function() as string
+            level = m.logLevel()
+            for each key in m.levels
+                if m.levels[key] = level then return key
+            end for
+            return "info"
+        end function,
         levels: {
             error: 3,
             warn: 2,
@@ -293,6 +308,30 @@ function _InternalPurchases_Registry(sectionName) as object
         end function,
         setUserId: function(userId as string) as void
             m.set({ userId: userId })
+        end function,
+    }
+end function
+
+function _InternalPurchases_IdentityManager(o = {} as object) as object
+    return  {
+        registry: o.registry,
+        setUserId: function(userId as string) as void
+            m.registry.setUserId(userId)
+        end function,
+        appUserId: function() as string
+            entries = m.registry.get()
+            if entries <> invalid and entries.userId <> invalid then return entries.userId
+            anonUserID = m.generateAnonUserId()
+            m.registry.setUserId(anonUserID)
+            return anonUserID
+        end function,
+        isAnonymous: function() as boolean
+            return m.appUserId().startsWith("$RCAnonymousID:")
+        end function,
+        generateAnonUserId: function() as string
+            r = CreateObject("roRegex", "-", "i")
+            uuid = r.ReplaceAll(LCase(createObject("roDeviceInfo").getRandomUUID()), "")
+            return "$RCAnonymousID:" + uuid
         end function,
     }
 end function
@@ -439,30 +478,7 @@ function _InternalPurchases(o = {} as object) as object
         billing = o.billing
     end if
 
-    identityManager = {
-        registry: registry,
-        setUserId: function(userId as string) as void
-            m.registry.setUserId(userId)
-        end function,
-        appUserId: function() as string
-            entries = m.registry.get()
-            if entries <> invalid and entries.userId <> invalid then return entries.userId
-            anonUserID = m.generateAnonUserId()
-            m.registry.set({ userId: anonUserID })
-            return anonUserID
-        end function,
-        isAnonymous: function() as boolean
-            return m.appUserId().startsWith("$RCAnonymousID:")
-        end function,
-        generateAnonUserId: function() as string
-            r = CreateObject("roRegex", "-", "i")
-            uuid = r.ReplaceAll(LCase(createObject("roDeviceInfo").getRandomUUID()), "")
-            return "$RCAnonymousID:" + uuid
-        end function,
-    }
-    if o.identityManager <> invalid then
-        identityManager = o.identityManager
-    end if
+    identityManager = _InternalPurchases_IdentityManager({ registry: registry })
 
     deviceInfo = {
         deviceInfo: CreateObject("roDeviceInfo")

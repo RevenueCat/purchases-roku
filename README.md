@@ -297,14 +297,18 @@ end sub)
 
 ## Getting the current App User ID, and checking if the current user is anonymous
 
+' Both callback and synchronous methods are available.
+
 ```brightscript
 ' isAnonymous: boolean indicating whether the current user is anonymous
 Purchases().isAnonymous(sub(isAnonymous, error)
 end sub)
+isAnonymous = Purchases().isAnonymous()
 
 ' appUserId: string representing the current user ID, can be anonymous
 Purchases().appUserId(sub(appUserId, error)
 end sub)
+appUserId = Purchases().appUserId()
 ```
 
 ## Getting customer info

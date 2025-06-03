@@ -13,7 +13,7 @@ function OfferingsTests(t)
                 m.t.assert.equal(offerings.current.availablePackages.count(), 2, "Available packages count err")
 
                 m.getOfferingsCallUserId = internalTestPurchases().api.getOfferingsInputArgs.userId
-                m.t.assert.isTrue(type(m.getOfferingsCallUserId) = "roString" or type(userId) = "String", "Unexpected user id type")
+                m.t.assert.isTrue(type(m.getOfferingsCallUserId) = "roString" or type(m.getOfferingsCallUserId) = "String", "Unexpected user id type")
                 Purchases().appUserId(sub(userId, error)
                     m.t.assert.isInvalid(error, "Unexpected error")
                     m.t.assert.equal(userId, m.getOfferingsCallUserId, "Unexpected user id")

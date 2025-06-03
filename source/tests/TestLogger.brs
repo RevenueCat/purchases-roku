@@ -1,13 +1,16 @@
 function TestLogger(inputArgs = {})
-    level = inputArgs.level
-    if level = invalid
-        level = "info"
-    endif
     return {
-        level: level,
         logLevel: function() as integer
-            if m.level <> invalid and m.levels[m.level] <> invalid then return m.levels[m.level]
+            level = _InternalPurchases_GetPurchasesConfig().logLevel
+            if level <> invalid and m.levels[level] <> invalid then return m.levels[level]
             return m.levels.info
+        end function,
+        logLevelString: function() as string
+            level = m.logLevel()
+            for each key in m.levels
+                if m.levels[key] = level then return key
+            end for
+            return "info"
         end function,
         levels: {
             error: 3,
