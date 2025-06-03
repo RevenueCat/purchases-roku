@@ -31,6 +31,7 @@
 - Fixed issue when calling isAnonymous, appUserId and syncPurchases methods.
 - Fixed an issue with the entitlement field `willRenew`.
 
+## 0.0.3
 ### 🐞 Bugfixes
 - Fixed an issue when parsing lifetime entitlements with null expiration date.
 - Fixed an issue when pasing non-subscription purchases.
