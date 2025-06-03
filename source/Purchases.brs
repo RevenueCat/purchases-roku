@@ -5,7 +5,10 @@ function Purchases() as object
         end if
 
         if m.global.isRunningRevenueCatTests <> invalid
-            task = invalid
+            task = m.global.task
+            if m.global.rc_internalTestPurchases = invalid then
+                throw "Purchases SDK not configured for testing"
+            end if
         else
             task = m.global.getScene().findNode("purchasesTask")
             if task = invalid then
@@ -72,6 +75,7 @@ function Purchases() as object
                 m._internal.invoke("currentOfferingForPlacement", inputArgs, callbackFunc)
             end sub,
             _internal: {
+                global: m.global,
                 configuration: configuration,
                 callbackContext: m.context,
                 setCallbackID: function(callbackFunc as dynamic) as string
@@ -93,11 +97,21 @@ function Purchases() as object
                     return callbackID
                 end function,
                 invoke: function(name as string, inputArgs = {}, callbackFunc = invalid as dynamic)
-                    m.task["api"] = {
-                        method: name,
-                        args: inputArgs,
-                        callbackID: m.setCallbackID(callbackFunc),
-                    }
+                    if m.global.isRunningRevenueCatTests <> invalid
+                        result = m.global.rc_internalTestPurchases[name](inputArgs)
+                        valueType = type(callbackFunc)
+                        if valueType = "roFunction" or valueType = "Function" then
+                            callbackFunc(result.data, result.error)
+                        else if valueType = "roString" or valueType = "String" then
+                            m[callbackFunc](result.data, result.error)
+                        end if
+                    else
+                        m.task["api"] = {
+                            method: name,
+                            args: inputArgs,
+                            callbackID: m.setCallbackID(callbackFunc),
+                        }
+                    end if
                 end function
                 task: task,
             }
@@ -872,11 +886,11 @@ function _InternalPurchases(o = {} as object) as object
             offerings = inputArgs.offerings
             placement_id = inputArgs.placementId
 
-            if offerings = invalid then return invalid
-            if placement_id = invalid then return invalid
+            if offerings = invalid then return { data: invalid }
+            if placement_id = invalid then return { data: invalid }
 
-            if offerings._placements = invalid then return invalid
-            if offerings._placements.offering_ids_by_placement = invalid then return invalid
+            if offerings._placements = invalid then return { data: invalid }
+            if offerings._placements.offering_ids_by_placement = invalid then return { data: invalid }
             placement_offering_id = offerings._placements.offering_ids_by_placement[placement_id]
             offering = invalid
             if placement_offering_id <> invalid
@@ -892,11 +906,13 @@ function _InternalPurchases(o = {} as object) as object
                     end if
                 end if
             end if
-            return m._offeringWithTargeting({
-                offering: offering,
-                placementIdentifier: placement_id
-                targetingRule: offerings._targeting
-            })
+            return {
+                data: m._offeringWithTargeting({
+                    offering: offering,
+                    placementIdentifier: placement_id
+                    targetingRule: offerings._targeting
+                })
+            }
         end sub,
         _deepCopy: function(original as Object) as Object
             if original = invalid then

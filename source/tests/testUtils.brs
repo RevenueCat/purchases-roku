@@ -1,4 +1,6 @@
 function configurePurchases(inputArgs = {} as object)
+    clearRegistry()
+    clearPurchases()
     fixtureProducts = catalogFixture()
     if inputArgs.products <> invalid
         fixtureProducts = inputArgs.products
@@ -38,6 +40,23 @@ function configurePurchases(inputArgs = {} as object)
 
     p.configuration.configure({ apiKey: Constants().TEST_API_KEY })
     inputArgs.t.addContext({ purchases: p })
+
+    ' Configure the SDK for testing
+    m.global.rc_internalTestPurchases = p
+    ' In BRS engine, the m context works differently than on device
+    ' In order to access it from inside the purchases object, we need to set it explicitly
+    m.t = inputArgs.t
+end function
+
+function clearPurchases()
+    GetGlobalAA().rc_purchasesSingleton = invalid
+    m.global.revenueCatSDKConfig = invalid
+    m.global.rc_internalTestPurchases = invalid
+end function
+
+function clearRegistry()
+    section = createObject("roRegistrySection", "RevenueCat")
+    section.delete("Storage")
 end function
 
 function mockApi()

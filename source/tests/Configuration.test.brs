@@ -1,7 +1,7 @@
 function ConfigurationTests(t)
     t.describe("Configuration Tests", sub(t)
         t.beforeEach(sub(t)
-            GetGlobalAA().rc_purchasesSingleton = invalid
+            configurePurchases({ t: t })
         end sub)
 
         t.it("Can be configured with apiKey", sub(t)
