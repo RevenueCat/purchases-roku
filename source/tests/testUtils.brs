@@ -58,6 +58,8 @@ function clearRegistry()
     sectionName = "RevenueCat_" + appInfo.GetID()
     section = createObject("roRegistrySection", sectionName)
     section.delete("Storage")
+    section = createObject("roRegistrySection", "RevenueCat")
+    section.delete("Storage")
 end function
 
 function internalTestPurchases() as object

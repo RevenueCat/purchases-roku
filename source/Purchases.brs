@@ -289,7 +289,28 @@ function _InternalPurchases(o = {} as object) as object
             section = createObject("roRegistrySection", m.sectionName)
             section.delete("Storage")
         end function,
+        migrateLegacyData: function() as void
+            legacySection = createObject("roRegistrySection", "RevenueCat")
+            if legacySection.exists("Storage") then
+                try
+                    legacyEntries = parseJson(legacySection.read("Storage"))
+                catch e
+                end try
+
+                if type(legacyEntries) = "roAssociativeArray" then
+                    section = createObject("roRegistrySection", m.sectionName)
+                    section.write("Storage", formatJson(legacyEntries))
+                    section.flush()
+                    legacySection.delete("Storage")
+                end if
+            end if
+        end function,
+        ' setUserId: function(userId as string) as void
+        '     m.set({ userId: userId })
+        ' end function,
     }
+
+    registry.migrateLegacyData()
 
     billing = {
         log: log,

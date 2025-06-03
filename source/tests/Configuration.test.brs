@@ -31,5 +31,26 @@ function ConfigurationTests(t)
             Purchases().setLogLevel("debug")
             t.assert.equal(Purchases().logLevel(), "debug", "Unexpected log level")
         end sub)
+
+        t.it("Can migrate legacy registry data", sub(t)
+            Purchases().isAnonymous(sub(result, error)
+                m.t.assert.isTrue(result, "Expected anonymous user id")
+            end sub)
+
+            legacySection = createObject("roRegistrySection", "RevenueCat")
+            legacySection.write("Storage", formatJson({ userId: "test_user_id" }))
+            legacySection.flush()
+
+            p = internalTestPurchases()
+            p.registry.migrateLegacyData()
+
+            Purchases().isAnonymous(sub(result, error)
+                m.t.assert.isFalse(result, "Expected non-anonymous user id")
+            end sub)
+
+            Purchases().appUserId(sub(result, error)
+                m.t.assert.equal(result, "test_user_id", "Unexpected user id")
+            end sub)
+        end sub)
     end sub)
 end function
