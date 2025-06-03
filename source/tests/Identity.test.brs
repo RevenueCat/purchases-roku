@@ -22,9 +22,9 @@ function IdentityTests(t)
                     m.t.assert.equal(result, "myappuserid", "Unexpected user id")
                 end sub)
 
-                userId = m.t.purchases.api.identifyInputArgs.userId
+                userId = internalTestPurchases().api.identifyInputArgs.userId
                 m.t.assert.isTrue(type(userId) = "roString" or type(userId) = "String", "Unexpected user id type")
-                newUserId = m.t.purchases.api.identifyInputArgs.newUserId
+                newUserId = internalTestPurchases().api.identifyInputArgs.newUserId
                 m.t.assert.isTrue(type(newUserId) = "roString" or type(newUserId) = "String", "Unexpected new user id type")
                 m.t.assert.equal(newUserId, "myappuserid", "Unexpected new user id")
 
@@ -40,7 +40,7 @@ function IdentityTests(t)
                 end sub)
                 m.t.assert.isValid(error, "Expected error")
                 m.t.assert.isInvalid(subscriber, "Unexpected data")
-                m.t.assert.equal(error.code, m.t.purchases.errors.invalidAppUserIdError.code, "Unexpected error code")
+                m.t.assert.equal(error.code, internalTestPurchases().errors.invalidAppUserIdError.code, "Unexpected error code")
             end sub)
         end sub)
 
@@ -74,10 +74,10 @@ function IdentityTests(t)
                     m.t.assert.notEqual(result, m.initialAnonymousId, "Unexpected user id")
                 end sub)
 
-                userId = m.t.purchases.api.identifyInputArgs.userId
+                userId = internalTestPurchases().api.identifyInputArgs.userId
                 m.t.assert.isTrue(type(userId) = "roString" or type(userId) = "String", "Unexpected user id type")
                 m.t.assert.equal(userId, "myappuserid", "Unexpected old user id")
-                newUserId = m.t.purchases.api.identifyInputArgs.newUserId
+                newUserId = internalTestPurchases().api.identifyInputArgs.newUserId
                 m.t.assert.isTrue(type(newUserId) = "roString" or type(newUserId) = "String", "Unexpected new user id type")
 
                 m.t.assert.isInvalid(error, "Unexpected error")

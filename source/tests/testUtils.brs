@@ -39,12 +39,11 @@ function configurePurchases(inputArgs = {} as object)
     end if
 
     p.configuration.configure({ apiKey: Constants().TEST_API_KEY })
-    inputArgs.t.addContext({ purchases: p })
 
     ' Configure the SDK for testing
     m.global.rc_internalTestPurchases = p
     ' In BRS engine, the m context works differently than on device
-    ' In order to access it from inside the purchases object, we need to set it explicitly
+    ' In order to access it from inside the callback functions, we need to set it explicitly in the context
     m.t = inputArgs.t
 end function
 
@@ -57,6 +56,10 @@ end function
 function clearRegistry()
     section = createObject("roRegistrySection", "RevenueCat")
     section.delete("Storage")
+end function
+
+function internalTestPurchases() as object
+    return m.global.rc_internalTestPurchases
 end function
 
 function mockApi()

@@ -12,7 +12,7 @@ function OfferingsTests(t)
                 m.t.assert.isValid(offerings.current.availablePackages, "Available packages error")
                 m.t.assert.equal(offerings.current.availablePackages.count(), 2, "Available packages count err")
 
-                m.getOfferingsCallUserId = m.t.purchases.api.getOfferingsInputArgs.userId
+                m.getOfferingsCallUserId = internalTestPurchases().api.getOfferingsInputArgs.userId
                 m.t.assert.isTrue(type(m.getOfferingsCallUserId) = "roString" or type(userId) = "String", "Unexpected user id type")
                 Purchases().appUserId(sub(userId, error)
                     m.t.assert.isInvalid(error, "Unexpected error")
@@ -53,14 +53,14 @@ function OfferingsTests(t)
                 m.t.assert.isValid(offerings.all, "All offerings error")
                 m.t.assert.equal(offerings.all.count(), 1, "All offerings count error")
 
-                m.t.assert.isFalse(m.t.purchases.log.hasLoggedMessage(m.t.purchases.strings.FAILED_TO_FETCH_PRODUCTS), "Unexpected error logged")
+                m.t.assert.isFalse(internalTestPurchases().log.hasLoggedMessage(internalTestPurchases().strings.FAILED_TO_FETCH_PRODUCTS), "Unexpected error logged")
             end sub)
         end sub)
 
         t.it("Logs an error when catalog returns invalid products", sub(t)
             configurePurchases({ t: t, products: wronglyConfiguredCatalogFixture() })
             Purchases().getOfferings(sub(offerings, error)
-                m.t.assert.isTrue(m.t.purchases.log.hasLoggedMessage(m.t.purchases.strings.FAILED_TO_FETCH_PRODUCTS), "Expected error not logged")
+                m.t.assert.isTrue(internalTestPurchases().log.hasLoggedMessage(internalTestPurchases().strings.FAILED_TO_FETCH_PRODUCTS), "Expected error not logged")
             end sub)
         end sub)
 
@@ -120,7 +120,7 @@ function OfferingsTests(t)
                     Purchases().purchase({ package: placement_offering.annual }, sub(data, error)
                         m.t.assert.isInvalid(error, "Unexpected error")
                         m.t.assert.isValid(data, "Purchase data error")
-                        presentedOfferingContext = m.t.purchases.api.postReceiptInputArgs.presentedOfferingContext
+                        presentedOfferingContext = internalTestPurchases().api.postReceiptInputArgs.presentedOfferingContext
                         m.t.assert.isValid(presentedOfferingContext, "Presented offering context error")
                         m.t.assert.isValid(presentedOfferingContext.targetingRule, "Targeting rule error")
                         m.t.assert.isValid(presentedOfferingContext.placementIdentifier, "Placement identifier error")
@@ -140,7 +140,7 @@ function OfferingsTests(t)
                 Purchases().purchase({ package: current_offering.annual }, sub(data, error)
                     m.t.assert.isInvalid(error, "Unexpected error")
                     m.t.assert.isValid(data, "Purchase data error")
-                    presentedOfferingContext = m.t.purchases.api.postReceiptInputArgs.presentedOfferingContext
+                    presentedOfferingContext = internalTestPurchases().api.postReceiptInputArgs.presentedOfferingContext
                     m.t.assert.isValid(presentedOfferingContext, "Presented offering context error")
                     m.t.assert.isValid(presentedOfferingContext.targetingRule, "Targeting rule error")
                     m.t.assert.isInvalid(presentedOfferingContext.placementIdentifier, "Placement identifier error")
@@ -162,7 +162,7 @@ function OfferingsTests(t)
                 Purchases().purchase({ package: offering.annual }, sub(data, error)
                     m.t.assert.isInvalid(error, "Unexpected error")
                     m.t.assert.isValid(data, "Purchase data error")
-                    presentedOfferingContext = m.t.purchases.api.postReceiptInputArgs.presentedOfferingContext
+                    presentedOfferingContext = internalTestPurchases().api.postReceiptInputArgs.presentedOfferingContext
                     m.t.assert.isValid(presentedOfferingContext, "Presented offering context error")
                     m.t.assert.isInvalid(presentedOfferingContext.targetingRule, "Targeting rule error")
                     m.t.assert.isInvalid(presentedOfferingContext.placementIdentifier, "Placement identifier error")
@@ -184,7 +184,7 @@ function OfferingsTests(t)
                 Purchases().purchase({ package: offering.annual }, sub(data, error)
                     m.t.assert.isInvalid(error, "Unexpected error")
                     m.t.assert.isValid(data, "Purchase data error")
-                    presentedOfferingContext = m.t.purchases.api.postReceiptInputArgs.presentedOfferingContext
+                    presentedOfferingContext = internalTestPurchases().api.postReceiptInputArgs.presentedOfferingContext
                     m.t.assert.isValid(presentedOfferingContext, "Presented offering context error")
                     m.t.assert.isInvalid(presentedOfferingContext.targetingRule, "Targeting rule error")
                     m.t.assert.isInvalid(presentedOfferingContext.placementIdentifier, "Placement identifier error")

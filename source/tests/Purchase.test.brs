@@ -40,24 +40,24 @@ function PurchaseTests(t)
                     subscriber = data.subscriber
                     assertSubscriberIsValid(m.t, subscriber)
 
-                    userId = m.t.purchases.api.postReceiptInputArgs.userId
+                    userId = internalTestPurchases().api.postReceiptInputArgs.userId
                     m.t.assert.isTrue(type(userId) = "roString" or type(userId) = "String", "Unexpected user id type")
-                    transaction = m.t.purchases.api.postReceiptInputArgs.transaction
+                    transaction = internalTestPurchases().api.postReceiptInputArgs.transaction
                     m.t.assert.isValid(transaction, "Transaction error")
                 end sub)
             end for
 
             Purchases().purchase({}, sub(data, error)
                 m.t.assert.isValid(error, "Expected error")
-                m.t.assert.equal(error.code, m.t.purchases.errors.purchaseInvalidError.code, "Unexpected error code")
-                m.t.assert.equal(error.message, m.t.purchases.errors.purchaseInvalidError.message, "Unexpected error message")
+                m.t.assert.equal(error.code, internalTestPurchases().errors.purchaseInvalidError.code, "Unexpected error code")
+                m.t.assert.equal(error.message, internalTestPurchases().errors.purchaseInvalidError.message, "Unexpected error message")
                 m.t.assert.isInvalid(data, "Unexpected data")
             end sub)
 
             Purchases().purchase({ code: "product_id", action: "Invalid" }, sub(data, error)
                 m.t.assert.isValid(error, "Expected error")
-                m.t.assert.equal(error.code, m.t.purchases.errors.purchaseInvalidError.code, "Unexpected error code")
-                m.t.assert.equal(error.message, m.t.purchases.errors.purchaseInvalidError.message, "Unexpected error message")
+                m.t.assert.equal(error.code, internalTestPurchases().errors.purchaseInvalidError.code, "Unexpected error code")
+                m.t.assert.equal(error.message, internalTestPurchases().errors.purchaseInvalidError.message, "Unexpected error message")
                 m.t.assert.isInvalid(data, "Unexpected data")
             end sub)
 
@@ -68,9 +68,9 @@ function PurchaseTests(t)
             Purchases().syncPurchases(sub(subscriber, error)
                 m.t.assert.isInvalid(error, "Unexpected error")
                 assertSubscriberIsValid(m.t, subscriber)
-                userId = m.t.purchases.api.postReceiptInputArgs.userId
+                userId = internalTestPurchases().api.postReceiptInputArgs.userId
                 m.t.assert.isTrue(type(userId) = "roString" or type(userId) = "String", "Unexpected user id type")
-                transaction = m.t.purchases.api.postReceiptInputArgs.transaction
+                transaction = internalTestPurchases().api.postReceiptInputArgs.transaction
                 m.t.assert.isValid(transaction, "Transaction error")
             end sub)
         end sub)

@@ -14,7 +14,7 @@ function customerInfoTests(t)
                 m.t.assert.isInvalid(error, "Unexpected error")
                 assertSubscriberIsValid(m.t, result)
 
-                userId = m.t.purchases.api.getCustomerInfoInputArgs.userId
+                userId = internalTestPurchases().api.getCustomerInfoInputArgs.userId
                 m.t.assert.isTrue(type(userId) = "roString" or type(userId) = "String", "Unexpected user id type")
                 m.t.assert.equal(userId, "user1", "Unexpected user id")
 
@@ -39,7 +39,7 @@ function customerInfoTests(t)
             result = Purchases().setAttributes({
                 email: "example@example.com"
             }, sub(data, error)
-                userId = m.t.purchases.api.postSubscriberAttributesInputArgs.userId
+                userId = internalTestPurchases().api.postSubscriberAttributesInputArgs.userId
                 m.t.assert.isTrue(type(userId) = "roString" or type(userId) = "String", "Unexpected user id type")
                 m.t.assert.equal(userId, "user1", "Unexpected user id")
 
