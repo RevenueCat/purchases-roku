@@ -54,7 +54,9 @@ function clearPurchases()
 end function
 
 function clearRegistry()
-    section = createObject("roRegistrySection", "RevenueCat")
+    appInfo = CreateObject("roAppInfo")
+    sectionName = "RevenueCat_" + appInfo.GetID()
+    section = createObject("roRegistrySection", sectionName)
     section.delete("Storage")
 end function
 

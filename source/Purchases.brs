@@ -236,8 +236,33 @@ function _InternalPurchases(o = {} as object) as object
 
     configuration.log = log
 
+    appInfo = {
+        appInfo: CreateObject("roAppInfo")
+        GetID: function()
+            return m.appInfo.GetID()
+        end function,
+        IsDev: function()
+            return m.appInfo.IsDev()
+        end function,
+        GetVersion: function()
+            return m.appInfo.GetVersion()
+        end function,
+        GetTitle: function()
+            return m.appInfo.GetTitle()
+        end function,
+        GetDevID: function()
+            return m.appInfo.GetDevID()
+        end function,
+    }
+    if o.appInfo <> invalid then
+        appInfo = o.appInfo
+    end if
+
+    sectionName = "RevenueCat_" + appInfo.GetID()
     registry = {
         log: log,
+        appInfo: appInfo,
+        sectionName: sectionName,
         set: function(newEntries as object) as void
             entries = m.get()
             if entries <> invalid
@@ -245,12 +270,12 @@ function _InternalPurchases(o = {} as object) as object
                     entries[key] = newEntries[key]
                 end for
             end if
-            section = createObject("roRegistrySection", "RevenueCat")
+            section = createObject("roRegistrySection", m.sectionName)
             section.write("Storage", formatJson(entries))
             section.flush()
         end function,
         get: function() as object
-            section = createObject("roRegistrySection", "RevenueCat")
+            section = createObject("roRegistrySection", m.sectionName)
             if section.exists("Storage") = false then return {}
             try
                 entries = parseJson(section.read("Storage"))
@@ -261,7 +286,7 @@ function _InternalPurchases(o = {} as object) as object
             return entries
         end function,
         clear: function() as void
-            section = createObject("roRegistrySection", "RevenueCat")
+            section = createObject("roRegistrySection", m.sectionName)
             section.delete("Storage")
         end function,
     }
@@ -398,28 +423,6 @@ function _InternalPurchases(o = {} as object) as object
     }
     if o.identityManager <> invalid then
         identityManager = o.identityManager
-    end if
-
-    appInfo = {
-        appInfo: CreateObject("roAppInfo")
-        GetID: function()
-            return m.appInfo.GetID()
-        end function,
-        IsDev: function()
-            return m.appInfo.IsDev()
-        end function,
-        GetVersion: function()
-            return m.appInfo.GetVersion()
-        end function,
-        GetTitle: function()
-            return m.appInfo.GetTitle()
-        end function,
-        GetDevID: function()
-            return m.appInfo.GetDevID()
-        end function,
-    }
-    if o.appInfo <> invalid then
-        appInfo = o.appInfo
     end if
 
     deviceInfo = {
