@@ -1,27 +1,26 @@
 function Purchases() as object
     if GetGlobalAA().rc_purchasesSingleton = invalid then
-        if m.global = invalid then
-            throw "The RevenueCat SDK can only be called from SceneGraph components where the m.global object is available."
-        end if
-
-        if m.global.isRunningRevenueCatTests <> invalid
-            task = m.global.task
-            if m.global.rc_internalTestPurchases = invalid then
-                throw "Purchases SDK not configured for testing"
+        task = invalid
+        if GetGlobalAA().isRunningRevenueCatTests = invalid
+            globalAA = GetGlobalAA().global
+            if globalAA = invalid then
+                throw "The RevenueCat SDK can only be called from SceneGraph components where the m.global object is available."
             end if
-        else
-            task = m.global.getScene().findNode("purchasesTask")
+
+            task = globalAA.getScene().findNode("purchasesTask")
             if task = invalid then
-                task = m.global.getScene().createChild("PurchasesTask")
+                task = globalAA.getScene().createChild("PurchasesTask")
                 task.id = "purchasesTask"
-                m.global.addFields({ revenueCatSDKConfig: {} })
+                ' The global AA is a SceneGraph node, need to manually add the field
+                globalAA.addFields({ rc_purchasesConfig: {} })
             end if
         end if
         m.context = {}
 
-        configuration = _InternalPurchases_Configuration({ global: m.global })
-        log = _InternalPurchases_Logger({ configuration: configuration })
-        configuration.log = log
+        appInfo = _InternalPurchases_AppInfo()
+        sectionName = "RevenueCat_" + appInfo.GetID()
+        registry = _InternalPurchases_Registry(sectionName)
+        configuration = _InternalPurchases_Configuration({ registry: registry })
 
         GetGlobalAA().rc_purchasesSingleton = {
             purchase: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
@@ -75,7 +74,6 @@ function Purchases() as object
                 m._internal.invoke("currentOfferingForPlacement", inputArgs, callbackFunc)
             end sub,
             _internal: {
-                global: m.global,
                 configuration: configuration,
                 callbackContext: m.context,
                 setCallbackID: function(callbackFunc as dynamic) as string
@@ -97,8 +95,11 @@ function Purchases() as object
                     return callbackID
                 end function,
                 invoke: function(name as string, inputArgs = {}, callbackFunc = invalid as dynamic)
-                    if m.global.isRunningRevenueCatTests <> invalid
-                        result = m.global.rc_internalTestPurchases[name](inputArgs)
+                    if GetGlobalAA().isRunningRevenueCatTests <> invalid
+                        if GetGlobalAA().rc_internalTestPurchases = invalid then
+                            throw "Purchases SDK not configured for testing"
+                        end if
+                        result = GetGlobalAA().rc_internalTestPurchases[name](inputArgs)
                         valueType = type(callbackFunc)
                         if valueType = "roFunction" or valueType = "Function" then
                             callbackFunc(result.data, result.error)
@@ -120,6 +121,27 @@ function Purchases() as object
     return GetGlobalAA().rc_purchasesSingleton
 end function
 
+function _InternalPurchases_GetPurchasesConfig() as object
+    config = invalid
+    if GetGlobalAA().isRunningRevenueCatTests <> invalid then
+        ' Tests are always run from the main thread so we can use the global AA
+        config = GetGlobalAA().rc_purchasesConfig
+    else
+        ' When running from a SceneGraph component, use the global node to share config between task and SDK
+        config = GetGlobalAA().global.rc_purchasesConfig
+    end if
+    if config = invalid then return {}
+    return config
+end function
+
+function _InternalPurchases_SetPurchasesConfig(config as object) as void
+    if GetGlobalAA().isRunningRevenueCatTests <> invalid then
+        GetGlobalAA().rc_purchasesConfig = config
+    else
+        GetGlobalAA().global.rc_purchasesConfig = config
+    end if
+end function
+
 sub _InternalPurchases_invokeCallbackFunction(e as object)
     data = e.getData()
     m.context[e.getField()](data.data, data.error)
@@ -127,24 +149,30 @@ end sub
 
 function _InternalPurchases_Configuration(o = {} as object) as object
     return {
-        _global: o.global,
-        log: o.log,
+        _registry: o.registry,
         get: function() as object
-            if m._global.revenueCatSDKConfig = invalid then return {}
-            return m._global.revenueCatSDKConfig
+            return _InternalPurchases_GetPurchasesConfig()
         end function,
         configure: function(config as object) as object
             if config.apiKey = invalid then
-                m.log.error("Missing apiKey in configuration")
+                _PurchasesLogger().error("Missing apiKey in configuration")
+            end if
+            if config.userId <> invalid and config.userId <> ""
+                valueType = type(config.userId)
+                if valueType = "roString" or valueType = "String" then
+                    m._registry.setUserId(config.userId)
+                else
+                    _PurchasesLogger().error("Invalid userId in configuration")
+                end if
             end if
             m.set(config)
         end function,
         set: function(config as object) as void
-            m._global.revenueCatSDKConfig = {
+            _InternalPurchases_SetPurchasesConfig({
                 apiKey: config.apiKey,
                 logLevel: config.logLevel,
                 proxyUrl: config.proxyUrl,
-            }
+            })
         end function,
         assert: function() as void
             if m.get().apiKey = invalid then
@@ -158,11 +186,11 @@ function _InternalPurchases_Configuration(o = {} as object) as object
     }
 end function
 
-function _InternalPurchases_Logger(o = {} as object) as object
-    return {
-        configuration: o.configuration,
+function _PurchasesLogger() as object
+    if GetGlobalAA().rc_logger = invalid then
+        GetGlobalAA().rc_logger = {
         logLevel: function() as integer
-            level = m.configuration.get().logLevel
+            level = _InternalPurchases_GetPurchasesConfig().logLevel
             if level <> invalid and m.levels[level] <> invalid then return m.levels[level]
             return m.levels.info
         end function,
@@ -192,15 +220,84 @@ function _InternalPurchases_Logger(o = {} as object) as object
             if type(message) = "roString" or type(message) = "String" then return message
             return FormatJson(message)
         end function,
+        }
+    end if
+    return GetGlobalAA().rc_logger
+end function
+
+function _InternalPurchases_AppInfo(o = {} as object) as object
+    return {
+        appInfo: CreateObject("roAppInfo")
+        GetID: function()
+        return m.appInfo.GetID()
+        end function,
+        IsDev: function()
+            return m.appInfo.IsDev()
+        end function,
+        GetVersion: function()
+            return m.appInfo.GetVersion()
+        end function,
+        GetTitle: function()
+            return m.appInfo.GetTitle()
+        end function,
+        GetDevID: function()
+            return m.appInfo.GetDevID()
+        end function,
+    }
+end function
+
+function _InternalPurchases_Registry(sectionName) as object
+    return {
+        sectionName: sectionName,
+        set: function(newEntries as object) as void
+            entries = m.get()
+            if entries <> invalid
+                for each key in newEntries
+                    entries[key] = newEntries[key]
+                end for
+            end if
+            section = createObject("roRegistrySection", m.sectionName)
+            section.write("Storage", formatJson(entries))
+            section.flush()
+        end function,
+        get: function() as object
+            section = createObject("roRegistrySection", m.sectionName)
+            if section.exists("Storage") = false then return {}
+            try
+                entries = parseJson(section.read("Storage"))
+            catch e
+                _PurchasesLogger().error("Failed to read registry:" + e.message)
+            end try
+            if type(entries) <> "roAssociativeArray" then return {}
+            return entries
+        end function,
+        clear: function() as void
+            section = createObject("roRegistrySection", m.sectionName)
+            section.delete("Storage")
+        end function,
+        migrateLegacyData: function() as void
+            legacySection = createObject("roRegistrySection", "RevenueCat")
+            if legacySection.exists("Storage") then
+                try
+                    legacyEntries = parseJson(legacySection.read("Storage"))
+                catch e
+                end try
+
+                if type(legacyEntries) = "roAssociativeArray" then
+                    section = createObject("roRegistrySection", m.sectionName)
+                    section.write("Storage", formatJson(legacyEntries))
+                    section.flush()
+                    legacySection.delete("Storage")
+                end if
+            end if
+        end function,
+        setUserId: function(userId as string) as void
+            m.set({ userId: userId })
+        end function,
     }
 end function
 
 function _InternalPurchases(o = {} as object) as object
-    _internal_global = o.global
-    if _internal_global = invalid
-        _internal_global = {}
-    end if
-
     ERRORS = {
         purchaseInvalidError: {
             message: "One or more of the arguments provided are invalid."
@@ -228,104 +325,25 @@ function _InternalPurchases(o = {} as object) as object
         FAILED_TO_FETCH_PRODUCTS: "Failed to fetch products from the Roku store. This can happen if billing testing is not correctly configured or a Beta Channel expired. Please review the 'How to setup a channel' section of the README."
     }
 
-    configuration = _InternalPurchases_Configuration({ global: _internal_global })
-    log = _InternalPurchases_Logger({ configuration: configuration })
-    if o.log <> invalid then
-        log = o.log
-    end if
-
-    configuration.log = log
-
-    appInfo = {
-        appInfo: CreateObject("roAppInfo")
-        GetID: function()
-            return m.appInfo.GetID()
-        end function,
-        IsDev: function()
-            return m.appInfo.IsDev()
-        end function,
-        GetVersion: function()
-            return m.appInfo.GetVersion()
-        end function,
-        GetTitle: function()
-            return m.appInfo.GetTitle()
-        end function,
-        GetDevID: function()
-            return m.appInfo.GetDevID()
-        end function,
-    }
-    if o.appInfo <> invalid then
-        appInfo = o.appInfo
-    end if
-
+    appInfo = _InternalPurchases_AppInfo()
     sectionName = "RevenueCat_" + appInfo.GetID()
-    registry = {
-        log: log,
-        appInfo: appInfo,
-        sectionName: sectionName,
-        set: function(newEntries as object) as void
-            entries = m.get()
-            if entries <> invalid
-                for each key in newEntries
-                    entries[key] = newEntries[key]
-                end for
-            end if
-            section = createObject("roRegistrySection", m.sectionName)
-            section.write("Storage", formatJson(entries))
-            section.flush()
-        end function,
-        get: function() as object
-            section = createObject("roRegistrySection", m.sectionName)
-            if section.exists("Storage") = false then return {}
-            try
-                entries = parseJson(section.read("Storage"))
-            catch e
-                m.log.error("Failed to read registry:" + e.message)
-            end try
-            if type(entries) <> "roAssociativeArray" then return {}
-            return entries
-        end function,
-        clear: function() as void
-            section = createObject("roRegistrySection", m.sectionName)
-            section.delete("Storage")
-        end function,
-        migrateLegacyData: function() as void
-            legacySection = createObject("roRegistrySection", "RevenueCat")
-            if legacySection.exists("Storage") then
-                try
-                    legacyEntries = parseJson(legacySection.read("Storage"))
-                catch e
-                end try
-
-                if type(legacyEntries) = "roAssociativeArray" then
-                    section = createObject("roRegistrySection", m.sectionName)
-                    section.write("Storage", formatJson(legacyEntries))
-                    section.flush()
-                    legacySection.delete("Storage")
-                end if
-            end if
-        end function,
-        ' setUserId: function(userId as string) as void
-        '     m.set({ userId: userId })
-        ' end function,
-    }
-
+    registry = _InternalPurchases_Registry(sectionName)
     registry.migrateLegacyData()
+    configuration = _InternalPurchases_Configuration({ registry: registry })
 
     billing = {
-        log: log,
         logStoreEvent: function(event as object) as void
             if event.isRequestSucceeded() then
-                m.log.debug("Store Request success")
-                m.log.debug(event.GetResponse())
+                _PurchasesLogger().debug("Store Request success")
+                _PurchasesLogger().debug(event.GetResponse())
             else if event.isRequestFailed() then
-                m.log.debug("Store Request failure")
-                m.log.debug(event.GetStatus())
-                m.log.debug(event.GetStatusMessage())
+                _PurchasesLogger().debug("Store Request failure")
+                _PurchasesLogger().debug(event.GetStatus())
+                _PurchasesLogger().debug(event.GetStatusMessage())
             else if event.isRequestInterrupted() then
-                m.log.debug("Store Request interrupted")
-                m.log.debug(event.GetStatus())
-                m.log.debug(event.GetStatusMessage())
+                _PurchasesLogger().debug("Store Request interrupted")
+                _PurchasesLogger().debug(event.GetStatus())
+                _PurchasesLogger().debug(event.GetStatusMessage())
             end if
         end function
         purchase: function(inputArgs = {}) as object
@@ -424,13 +442,13 @@ function _InternalPurchases(o = {} as object) as object
     identityManager = {
         registry: registry,
         setUserId: function(userId as string) as void
-            m.registry.set({ userId: userId })
+            m.registry.setUserId(userId)
         end function,
         appUserId: function() as string
             entries = m.registry.get()
             if entries <> invalid and entries.userId <> invalid then return entries.userId
             anonUserID = m.generateAnonUserId()
-            m.registry.set({ userId: anonUserId })
+            m.registry.set({ userId: anonUserID })
             return anonUserID
         end function,
         isAnonymous: function() as boolean
@@ -504,7 +522,7 @@ function _InternalPurchases(o = {} as object) as object
             }
         end function,
         getOfferings: function(inputArgs = {}) as object
-            result = _fetch({
+            result = _InternalPurchases_fetch({
                 url: m.urls().getOfferings,
                 headers: m.headers(),
                 method: "GET"
@@ -520,7 +538,7 @@ function _InternalPurchases(o = {} as object) as object
             end if
         end function,
         identify: function(inputArgs = {}) as object
-            result = _fetch({
+            result = _InternalPurchases_fetch({
                 url: m.urls().identify,
                 headers: m.headers(),
                 method: "POST",
@@ -540,7 +558,7 @@ function _InternalPurchases(o = {} as object) as object
             end if
         end function,
         getCustomerInfo: function(inputArgs = {}) as object
-            result = _fetch({
+            result = _InternalPurchases_fetch({
                 url: m.urls().getCustomerInfo,
                 headers: m.headers(),
                 method: "GET"
@@ -567,7 +585,7 @@ function _InternalPurchases(o = {} as object) as object
                     "value": value
                 }
             end for
-            result = _fetch({
+            result = _InternalPurchases_fetch({
                 url: m.urls().postSubscriberAttributes,
                 headers: m.headers(),
                 method: "POST",
@@ -614,7 +632,7 @@ function _InternalPurchases(o = {} as object) as object
                 price = transaction.cost
             end if
 
-            result = _fetch({
+            result = _InternalPurchases_fetch({
                 url: m.urls().postReceipt,
                 headers: m.headers(),
                 method: "POST",
@@ -647,7 +665,6 @@ function _InternalPurchases(o = {} as object) as object
     end if
 
     return {
-        log: log,
         errors: ERRORS,
         strings: STRINGS,
         billing: billing,
@@ -679,21 +696,21 @@ function _InternalPurchases(o = {} as object) as object
         logIn: function(userId as string) as object
             m.configuration.assert()
             if userId = invalid or userId = ""
-                m.log.error("Missing userId in logIn")
+                _PurchasesLogger().error("Missing userId in logIn")
                 return {
                     error: m.errors.invalidAppUserIdError
                 }
             end if
             valueType = type(userId)
             if valueType <> "roString" and valueType <> "String" then
-                m.log.error("Invalid userId in logIn")
+                _PurchasesLogger().error("Invalid userId in logIn")
                 return {
                     error: m.errors.invalidAppUserIdError
                 }
             end if
             currentUserID = m.identityManager.appUserId()
             if userId = currentUserID
-                m.log.info("User already logged in")
+                _PurchasesLogger().info("User already logged in")
                 return m.getCustomerInfo()
             end if
             m.setUserId(userId)
@@ -751,7 +768,7 @@ function _InternalPurchases(o = {} as object) as object
             action = ""
             if inputArgs.action <> invalid
                 if inputArgs.action <> "Upgrade" and inputArgs.action <> "Downgrade"
-                    m.log.error("Ivalid action in purchase")
+                    _PurchasesLogger().error("Ivalid action in purchase")
                     return {
                         error: m.errors.purchaseInvalidError
                     }
@@ -770,7 +787,7 @@ function _InternalPurchases(o = {} as object) as object
                 code = inputArgs.product.code
             end if
             if code = "" then
-                m.log.error("Ivalid product identifier in purchase")
+                _PurchasesLogger().error("Ivalid product identifier in purchase")
                 return {
                     error: m.errors.purchaseInvalidError
                 }
@@ -836,7 +853,7 @@ function _InternalPurchases(o = {} as object) as object
             productsByID = result.data
 
             if productsByID.Count() = 3 and (productsByID["PROD1"] <> invalid or productsByID["PROD2"] <> invalid or productsByID["FAILPROD"] <> invalid)
-                m.log.error(m.strings.FAILED_TO_FETCH_PRODUCTS)
+                _PurchasesLogger().error(m.strings.FAILED_TO_FETCH_PRODUCTS)
             end if
 
             for each offering in offerings.offerings
@@ -1019,7 +1036,7 @@ function _InternalPurchases(o = {} as object) as object
                 end if
             end if
             if purchase = invalid
-                m.log.error("Could not find purchase for entitlement with product_id" + product_identifier)
+                _PurchasesLogger().error("Could not find purchase for entitlement with product_id" + product_identifier)
             end if
             return purchase
         end function,
@@ -1116,8 +1133,8 @@ function _InternalPurchases(o = {} as object) as object
             result = m[args.method](args.args)
             if result <> invalid then
                 callbackField = args.callbackID
-                m.log.debug("callbackField: " + callbackField.ToStr())
-                m.log.debug("method: " + args.method.ToStr())
+                _PurchasesLogger().debug("callbackField: " + callbackField.ToStr())
+                _PurchasesLogger().debug("method: " + args.method.ToStr())
                 m.task[callbackField] = result
                 m.task.unobserveField(callbackField)
                 m.task.removeField(callbackField)
@@ -1149,7 +1166,7 @@ end function
 '    xml():   object - function that returns the response parsed as an roXmlElement
 ' }
 
-function _fetch(options)
+function _InternalPurchases_fetch(options)
     timeout = options.timeout
     if timeout = invalid then timeout = 0
 

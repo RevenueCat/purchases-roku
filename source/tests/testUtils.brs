@@ -1,6 +1,8 @@
 function configurePurchases(inputArgs = {} as object)
     clearRegistry()
     clearPurchases()
+    clearConfiguration()
+
     fixtureProducts = catalogFixture()
     if inputArgs.products <> invalid
         fixtureProducts = inputArgs.products
@@ -22,7 +24,14 @@ function configurePurchases(inputArgs = {} as object)
             return { data: purchasedTransactionFixture() }
         end function,
     }
-    p = _InternalPurchases({ billing: billing, log: TestLogger() })
+
+    _InternalPurchases_SetPurchasesConfig({
+        apiKey: Constants().TEST_API_KEY
+    })
+
+    p = _InternalPurchases({ billing: billing })
+
+    GetGlobalAA().rc_logger = TestLogger()
 
     ' By default, mock the API calls
     if inputArgs.mockApi <> false
@@ -38,10 +47,8 @@ function configurePurchases(inputArgs = {} as object)
         end for
     end if
 
-    p.configuration.configure({ apiKey: Constants().TEST_API_KEY })
-
     ' Configure the SDK for testing
-    m.global.rc_internalTestPurchases = p
+    GetGlobalAA().rc_internalTestPurchases = p
     ' In BRS engine, the m context works differently than on device
     ' In order to access it from inside the callback functions, we need to set it explicitly in the context
     m.t = inputArgs.t
@@ -49,8 +56,11 @@ end function
 
 function clearPurchases()
     GetGlobalAA().rc_purchasesSingleton = invalid
-    m.global.revenueCatSDKConfig = invalid
-    m.global.rc_internalTestPurchases = invalid
+    GetGlobalAA().rc_internalTestPurchases = invalid
+end function
+
+function clearConfiguration()
+    _InternalPurchases_SetPurchasesConfig({})
 end function
 
 function clearRegistry()
@@ -63,7 +73,7 @@ function clearRegistry()
 end function
 
 function internalTestPurchases() as object
-    return m.global.rc_internalTestPurchases
+    return GetGlobalAA().rc_internalTestPurchases
 end function
 
 function mockApi()

@@ -53,14 +53,14 @@ function OfferingsTests(t)
                 m.t.assert.isValid(offerings.all, "All offerings error")
                 m.t.assert.equal(offerings.all.count(), 1, "All offerings count error")
 
-                m.t.assert.isFalse(internalTestPurchases().log.hasLoggedMessage(internalTestPurchases().strings.FAILED_TO_FETCH_PRODUCTS), "Unexpected error logged")
+                m.t.assert.isFalse(_PurchasesLogger().hasLoggedMessage(internalTestPurchases().strings.FAILED_TO_FETCH_PRODUCTS), "Unexpected error logged")
             end sub)
         end sub)
 
         t.it("Logs an error when catalog returns invalid products", sub(t)
             configurePurchases({ t: t, products: wronglyConfiguredCatalogFixture() })
             Purchases().getOfferings(sub(offerings, error)
-                m.t.assert.isTrue(internalTestPurchases().log.hasLoggedMessage(internalTestPurchases().strings.FAILED_TO_FETCH_PRODUCTS), "Expected error not logged")
+                m.t.assert.isTrue(_PurchasesLogger().hasLoggedMessage(internalTestPurchases().strings.FAILED_TO_FETCH_PRODUCTS), "Expected error not logged")
             end sub)
         end sub)
 

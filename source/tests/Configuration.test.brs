@@ -5,13 +5,30 @@ function ConfigurationTests(t)
         end sub)
 
         t.it("Can be configured with apiKey", sub(t)
+            clearConfiguration()
+
             p = Purchases()
             t.assert.isFalse(p.isConfigured(), "Expected not configured")
             p.configure({ apiKey: Constants().TEST_API_KEY })
             t.assert.isTrue(p.isConfigured(), "Expected configured")
         end sub)
 
+        t.it("Can be configured with apiKey and userId", sub(t)
+            clearConfiguration()
+            t.assert.isFalse(Purchases().isConfigured(), "Expected not configured")
+            Purchases().configure({ apiKey: Constants().TEST_API_KEY, userId: "test_user_id" })
+            t.assert.isTrue(Purchases().isConfigured(), "Expected configured")
+            Purchases().isAnonymous(sub(result, error)
+                m.t.assert.isFalse(result, "Expected non-anonymous user id")
+            end sub)
+            Purchases().appUserId(sub(result, error)
+                m.t.assert.equal(result, "test_user_id", "Unexpected user id")
+            end sub)
+        end sub)
+
         t.it("Throws assertion if used before configuring", sub(t)
+            clearConfiguration()
+
             try
                 result = _InternalPurchases().getOfferings()
                 t.fail()
