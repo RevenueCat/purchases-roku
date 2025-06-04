@@ -33,7 +33,7 @@ function Purchases() as object
             configure: sub(inputArgs = {} as object)
                 m._internal.configuration.configure(inputArgs)
             end sub,
-            isConfigured: function() as object
+            isConfigured: function() as boolean
                 return m._internal.configuration.isConfigured()
             end function,
             setProxyURL: sub(proxyURL as string)
