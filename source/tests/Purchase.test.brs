@@ -13,7 +13,10 @@ function PurchaseTests(t)
                 end function
             }
             configurePurchases({ t: t, billing: billing })
-            t.purchases.login("mark_roku_test")
+            Purchases().logIn("mark_roku_test", sub(subscriber, error)
+                m.t.assert.isInvalid(error, "Unexpected error")
+                assertSubscriberIsValid(m.t, subscriber)
+            end sub)
         end sub)
 
         t.it("Can call purchase", sub(t)
@@ -29,50 +32,53 @@ function PurchaseTests(t)
                 { product: { code: "product_id" }, action: "Downgrade" }
             ]
             for each params in purchase_params
-                result = t.purchases.purchase(params)
-                t.assert.isValid(result, "Purchase result error")
-                t.assert.isInvalid(result.error, "Unexpected error")
-                data = result.data
-                t.assert.isValid(data, "Purchase data error")
-                transaction = data.transaction
-                t.assert.isValid(transaction, "Transaction error")
+                Purchases().purchase(params, sub(data, error)
+                    m.t.assert.isValid(data, "Purchase data error")
+                    transaction = data.transaction
+                    m.t.assert.isValid(transaction, "Transaction error")
 
-                subscriber = data.subscriber
-                assertSubscriberIsValid(t, subscriber)
+                    subscriber = data.subscriber
+                    assertSubscriberIsValid(m.t, subscriber)
 
-                userId = t.purchases.api.postReceiptInputArgs.userId
-                t.assert.isTrue(type(userId) = "roString" or type(userId) = "String", "Unexpected user id type")
-                transaction = t.purchases.api.postReceiptInputArgs.transaction
-                t.assert.isValid(transaction, "Transaction error")
+                    userId = internalTestPurchases().api.postReceiptInputArgs.userId
+                    m.t.assert.isTrue(type(userId) = "roString" or type(userId) = "String", "Unexpected user id type")
+                    transaction = internalTestPurchases().api.postReceiptInputArgs.transaction
+                    m.t.assert.isValid(transaction, "Transaction error")
+                end sub)
             end for
 
-            result = t.purchases.purchase({})
-            t.assert.isValid(result, "Purchase result error")
-            t.assert.isValid(result.error, "Expected error")
-            t.assert.equal(result.error.code, t.purchases.errors.purchaseInvalidError.code, "Unexpected error code")
-            t.assert.equal(result.error.message, t.purchases.errors.purchaseInvalidError.message, "Unexpected error message")
-            t.assert.isInvalid(result.data, "Unexpected data")
+            Purchases().purchase({}, sub(data, error)
+                m.t.assert.isValid(error, "Expected error")
+                m.t.assert.equal(error.code, internalTestPurchases().errors.purchaseInvalidError.code, "Unexpected error code")
+                m.t.assert.equal(error.message, internalTestPurchases().errors.purchaseInvalidError.message, "Unexpected error message")
+                m.t.assert.isInvalid(data, "Unexpected data")
+            end sub)
 
-            result = t.purchases.purchase({ code: "product_id", action: "Invalid" })
-            t.assert.isValid(result, "Purchase result error")
-            t.assert.isValid(result.error, "Expected error")
-            t.assert.equal(result.error.code, t.purchases.errors.purchaseInvalidError.code, "Unexpected error code")
-            t.assert.equal(result.error.message, t.purchases.errors.purchaseInvalidError.message, "Unexpected error message")
-            t.assert.isInvalid(result.data, "Unexpected data")
+            Purchases().purchase({ code: "product_id", action: "Invalid" }, sub(data, error)
+                m.t.assert.isValid(error, "Expected error")
+                m.t.assert.equal(error.code, internalTestPurchases().errors.purchaseInvalidError.code, "Unexpected error code")
+                m.t.assert.equal(error.message, internalTestPurchases().errors.purchaseInvalidError.message, "Unexpected error message")
+                m.t.assert.isInvalid(data, "Unexpected data")
+            end sub)
 
             t.pass()
         end sub)
 
         t.it("Can syncPurchases", sub(t)
-            result = t.purchases.syncPurchases()
-            t.assert.isValid(result, "SyncPurchases result error")
-            t.assert.isInvalid(result.error, "Unexpected error")
-            assertSubscriberIsValid(t, result.data)
-            userId = t.purchases.api.postReceiptInputArgs.userId
-            t.assert.isTrue(type(userId) = "roString" or type(userId) = "String", "Unexpected user id type")
-            transaction = t.purchases.api.postReceiptInputArgs.transaction
-            t.assert.isValid(transaction, "Transaction error")
-            t.pass()
+            Purchases().syncPurchases(sub(subscriber, error)
+                m.t.assert.isInvalid(error, "Unexpected error")
+                assertSubscriberIsValid(m.t, subscriber)
+                userId = internalTestPurchases().api.postReceiptInputArgs.userId
+                m.t.assert.isTrue(type(userId) = "roString" or type(userId) = "String", "Unexpected user id type")
+                transaction = internalTestPurchases().api.postReceiptInputArgs.transaction
+                m.t.assert.isValid(transaction, "Transaction error")
+            end sub)
         end sub)
     end sub)
 end function
+
+sub callbackFunc(data, error)
+    print "callbackFunc"
+    print "data: "; data
+    print "error: "; error
+end sub

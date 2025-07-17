@@ -55,7 +55,8 @@ Initialize the SDK with your api key. You typically do this inside the `init()` 
 ```brightscript
   sub init()
     Purchases().configure({
-      "apiKey": "roku_XXXXX"
+      "apiKey": "roku_XXXXX",
+      "userId": "my_user_id" ' optional, will use an anonymous user id if not provided
     })
   end sub
 ```
@@ -296,14 +297,18 @@ end sub)
 
 ## Getting the current App User ID, and checking if the current user is anonymous
 
+' Both callback and synchronous methods are available.
+
 ```brightscript
 ' isAnonymous: boolean indicating whether the current user is anonymous
 Purchases().isAnonymous(sub(isAnonymous, error)
 end sub)
+isAnonymous = Purchases().isAnonymous()
 
 ' appUserId: string representing the current user ID, can be anonymous
 Purchases().appUserId(sub(appUserId, error)
 end sub)
+appUserId = Purchases().appUserId()
 ```
 
 ## Getting customer info
@@ -351,6 +356,7 @@ sub init()
   ' Initialize the SDK
   Purchases().configure({
       "apiKey": "roku_XXXXX",
+      "userId": "my_user_id" ' optional, will use an anonymous user id if not provided
   })
   ' Login the user
   Purchases().logIn(m.my_user_id, sub(subscriber, error)

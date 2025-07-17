@@ -1,13 +1,13 @@
 function init()
-    if m.global.getField("purchases_task_initialized") = invalid then
-        m.global.addFields({ "purchases_task_initialized": true })
+    if m.global.getField("rc_taskInitialized") = invalid then
+        m.global.addFields({ "rc_taskInitialized": true })
         m.port = CreateObject("roMessagePort")
         m.top.observeField("api", m.port)
         m.top.functionName = "runloop"
         m.top.control = "RUN"
         m.store = CreateObject("roChannelStore")
         m.store.SetMessagePort(m.port)
-        m.purchases = _InternalPurchases({ task: m.top, global: m.global })
+        m.purchases = _InternalPurchases({ task: m.top })
         m.callbackCounter = 0
     end if
 end function

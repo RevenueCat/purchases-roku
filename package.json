@@ -7,10 +7,10 @@
   "license": "MIT",
   "private": true,
   "devDependencies": {
-    "brs-engine": "^1.6.0",
-    "roku-deploy": "^3.12.0",
     "@rokucommunity/bslint": "^0.8.20",
-    "brighterscript-formatter": "^1.7.1"
+    "brighterscript-formatter": "^1.7.1",
+    "brs-engine": "^1.6.0",
+    "roku-deploy": "^3.12.0"
   },
   "scripts": {
     "tests": "sh scripts/runLocal.sh",
@@ -19,5 +19,6 @@
     "lint": "bslint --checkUsage",
     "checkFormat": "bsfmt 'source/**/*.brs' 'components/**/*.brs' --check",
     "format": "bsfmt 'source/**/*.brs' 'components/**/*.brs' --write"
-  }
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
