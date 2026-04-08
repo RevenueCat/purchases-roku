@@ -341,6 +341,36 @@ Purchases().syncPurchases(sub(subscriber, error)
 end sub)
 ```
 
+## Handling Enhanced Subscription Recovery
+
+If the user has a subscription on hold, calling this method will display the recovery dialog to help them resolve it.
+
+```brightscript
+Purchases().displayRecoveryDialogIfNeeded(sub(result, error)
+  if error = invalid
+    print "There was an error displaying the recovery dialog"
+    print error
+  else
+    print "Recovery dialog displayed"
+    ' The status of the recovery dialog
+    ' 3: A subscription, which was in recovery (Roku was attempting to charge their method of payment over a period of days), has been canceled by the user. As a result, the subscription is no longer valid.
+    ' 2: One or more subscriptions are still in recovery.
+    ' 1: No subscriptions are in recovery.
+    result.data.recoveryStatus
+    ' List of product codes associated with subscriptions for which payments are still attempting to be recovered.
+    result.data.recoveryProducts
+  end if
+end sub)
+
+' If you want to allow the user to continue watching their content after the recovery dialog, you can pass `allowPlayback: true` as a parameter.
+Purchases().displayRecoveryDialogIfNeeded({ allowPlayback: true }, sub(result, error)
+end sub)
+```
+
+Before calling this method, make sure you have enabled Enable Enhanced Subscription Recovery for your app.
+
+To learn more: https://developer.roku.com/docs/developer-program/roku-pay/subscription-recovery/subscription-on-hold.md
+
 ## Tying everything together
 
 For most apps, the usage of the SDK would look like this:
