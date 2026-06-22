@@ -12,18 +12,6 @@ If you decide you want to help, that [you can do this!](/../../labels/you%20can%
 - If that builds, then follow [the final steps (Create a pull request to RevenueCat)](#5-create-a-pull-request-to-revenuecatmain-and-request-review)
 - Done!
 
-## Environment Setup
-
-We use sdkman to specify the environment that should be used when developing. Install sdkman using  their 
-[official instructions](https://sdkman.io/install). Navigate to the root of this project and do `sdk env install`,
-which should install the specific Java version we expect you to use.
-
-```bash
-bundle exec fastlane setup_dev
-```
-
-It links in our pre-commit hook to run detekt. That saves you time so you don't have to wait for our CI to do it ⏱.
-
 #### 1. Create an issue to make sure its something that should be done.
 
 Before submitting a Github issue, please make sure to
