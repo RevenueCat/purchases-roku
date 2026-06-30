@@ -1,3 +1,11 @@
+## Unreleased
+### ✨ New Features
+- Added automatic best-effort purchase syncing after `Purchases().configure(...)`. This is enabled by default and can be disabled with `autoSyncPurchases: false`.
+- Added a persistent registry-backed retry queue for failed RevenueCat receipt posts. Queued receipt posts are retried on the next configure/auto-sync cycle and removed after a successful post.
+
+### 🐞 Bugfixes
+- `syncPurchases` now attempts every Roku purchase returned by the store instead of aborting after the first failed receipt post. Failed posts are queued for retry and returned in an aggregate error result.
+
 ## 0.0.5
 ### ✨ New Features
 - Added support for setting a user ID when configuring the SDK:

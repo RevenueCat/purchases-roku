@@ -57,9 +57,14 @@ Initialize the SDK with your api key. You typically do this inside the `init()` 
     Purchases().configure({
       "apiKey": "roku_XXXXX",
       "userId": "my_user_id" ' optional, will use an anonymous user id if not provided
+      "autoSyncPurchases": true ' optional, defaults to true
     })
   end sub
 ```
+
+By default, configuring the SDK will perform a best-effort `syncPurchases` in the background. This helps RevenueCat recover Roku purchases that were made outside the app or before the app had a chance to post receipts. Errors from this automatic sync are logged but do not block configuration. Failed receipt posts are stored locally and retried the next time the SDK is configured.
+
+Set `autoSyncPurchases` to `false` if your app needs to opt out and call `syncPurchases` manually.
 
 ## Callbacks and error handling
 
@@ -357,6 +362,7 @@ sub init()
   Purchases().configure({
       "apiKey": "roku_XXXXX",
       "userId": "my_user_id" ' optional, will use an anonymous user id if not provided
+      "autoSyncPurchases": true ' optional, defaults to true
   })
   ' Login the user
   Purchases().logIn(m.my_user_id, sub(subscriber, error)

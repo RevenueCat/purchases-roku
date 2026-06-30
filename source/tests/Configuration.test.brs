@@ -26,6 +26,58 @@ function ConfigurationTests(t)
             end sub)
         end sub)
 
+        t.it("Auto syncs purchases on configure by default", sub(t)
+            billing = {
+                getAllPurchasesCount: 0,
+                getAllPurchases: function()
+                    m.getAllPurchasesCount++
+                    return { data: purchaseHistoryFixture() }
+                end function,
+            }
+            configurePurchases({ t: t, billing: billing })
+            clearConfiguration()
+
+            Purchases().configure({ apiKey: Constants().TEST_API_KEY })
+
+            t.assert.equal(internalTestPurchases().billing.getAllPurchasesCount, 1, "Expected auto sync to fetch purchases")
+        end sub)
+
+        t.it("Can disable auto sync purchases on configure", sub(t)
+            billing = {
+                getAllPurchasesCount: 0,
+                getAllPurchases: function()
+                    m.getAllPurchasesCount++
+                    return { data: purchaseHistoryFixture() }
+                end function,
+            }
+            configurePurchases({ t: t, billing: billing })
+            clearConfiguration()
+
+            Purchases().configure({ apiKey: Constants().TEST_API_KEY, autoSyncPurchases: false })
+
+            t.assert.equal(internalTestPurchases().billing.getAllPurchasesCount, 0, "Expected auto sync to be disabled")
+        end sub)
+
+        t.it("Auto sync failures do not break configure", sub(t)
+            api = {
+                postReceipt: function(inputArgs = {})
+                    return {
+                        error: {
+                            code: 500,
+                            message: "Server error",
+                        }
+                    }
+                end function,
+            }
+            configurePurchases({ t: t, api: api })
+            clearConfiguration()
+
+            Purchases().configure({ apiKey: Constants().TEST_API_KEY })
+
+            t.assert.isTrue(Purchases().isConfigured(), "Expected configured")
+            t.assert.isTrue(_PurchasesLogger().hasLoggedMessage("Auto sync purchases failed"), "Expected auto sync failure to be logged")
+        end sub)
+
         t.it("Throws assertion if used before configuring", sub(t)
             clearConfiguration()
 

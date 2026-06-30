@@ -89,7 +89,7 @@ function OfferingsTests(t)
                 m.t.assert.isInvalid(error, "Unexpected error")
                 m.t.assert.isValid(offerings, "Offerings data error")
 
-                    ' Inject a fallback offering id, and a placement whose offering id does not exist
+                ' Inject a fallback offering id, and a placement whose offering id does not exist
                 offerings._placements.fallback_offering_id = "marks-premium"
                 offerings._placements.offering_ids_by_placement["valid_placement"] = "invalid_offering"
                 ' The valid placement should still return a valid offering

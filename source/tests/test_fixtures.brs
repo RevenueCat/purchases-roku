@@ -405,33 +405,33 @@ function offeringsFixture(inputArgs = {}) as object
     return {
         "current_offering_id": "marks-premium",
         "offerings": [
-          {
-            "description": "default",
-            "identifier": "marks-premium",
-            "metadata": {
-              "foo": "bar"
-            },
-            "packages": [
-              {
-                "identifier": "$rc_monthly",
-                "platform_product_identifier": "monthly_product"
-              },
-              {
-                "identifier": "$rc_annual",
-                "platform_product_identifier": "yearly_subscription_product"
-              }
-            ]
-          }
+            {
+                "description": "default",
+                "identifier": "marks-premium",
+                "metadata": {
+                    "foo": "bar"
+                },
+                "packages": [
+                    {
+                        "identifier": "$rc_monthly",
+                        "platform_product_identifier": "monthly_product"
+                    },
+                    {
+                        "identifier": "$rc_annual",
+                        "platform_product_identifier": "yearly_subscription_product"
+                    }
+                ]
+            }
         ],
         "placements": {
-          "fallback_offering_id": invalid,
-          "offering_ids_by_placement": {
-            "my_placement": "marks-premium"
-          }
+            "fallback_offering_id": invalid,
+            "offering_ids_by_placement": {
+                "my_placement": "marks-premium"
+            }
         },
         "targeting": {
-          "revision": 10,
-          "rule_id": "AK_1qeJfjN"
+            "revision": 10,
+            "rule_id": "AK_1qeJfjN"
         }
-      }
+    }
 end function
