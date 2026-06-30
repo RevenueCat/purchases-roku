@@ -61,6 +61,8 @@ Initialize the SDK with your api key. You typically do this inside the `init()` 
   end sub
 ```
 
+When Roku transaction data includes `rokuCustomerId`, the SDK syncs it to RevenueCat as the reserved subscriber attribute `$rokuCustomerId`. This can happen after a purchase or when `syncPurchases` reads existing Roku purchase history. Users without Roku Pay purchase history are not expected to have this attribute.
+
 ## Callbacks and error handling
 
 In methods of the SDK which perform async operations, you can get the result by passing a sub routine or a callback name.

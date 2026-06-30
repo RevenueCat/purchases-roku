@@ -757,6 +757,61 @@ function _InternalPurchases(o = {} as object) as object
             end if
             return { data: true }
         end function,
+        rokuCustomerIDAttributeKey: "$rokuCustomerId",
+        rokuCustomerIDAttributeSyncsKey: "rokuCustomerIDAttributeSyncs",
+        rokuCustomerIDFromTransaction: function(transaction as object) as object
+            if transaction = invalid then return invalid
+            rokuCustomerID = transaction.rokuCustomerId
+            if rokuCustomerID = invalid then rokuCustomerID = transaction.roku_customer_id
+            if rokuCustomerID = invalid then rokuCustomerID = transaction.customerId
+            valueType = type(rokuCustomerID)
+            if (valueType = "roString" or valueType = "String") and rokuCustomerID <> "" then return rokuCustomerID
+            return invalid
+        end function,
+        rokuCustomerIDFromTransactions: function(transactions as object) as object
+            if transactions = invalid then return invalid
+            for each transaction in transactions
+                rokuCustomerID = m.rokuCustomerIDFromTransaction(transaction)
+                if rokuCustomerID <> invalid then return rokuCustomerID
+            end for
+            return invalid
+        end function,
+        hasSyncedRokuCustomerIDAttribute: function(userID as string, rokuCustomerID as string) as boolean
+            entries = m.registry.get()
+            syncs = entries[m.rokuCustomerIDAttributeSyncsKey]
+            if type(syncs) <> "roAssociativeArray" then return false
+            return syncs[userID] = rokuCustomerID
+        end function,
+        setSyncedRokuCustomerIDAttribute: function(userID as string, rokuCustomerID as string) as void
+            entries = m.registry.get()
+            syncs = entries[m.rokuCustomerIDAttributeSyncsKey]
+            if type(syncs) <> "roAssociativeArray" then syncs = {}
+            syncs[userID] = rokuCustomerID
+            update = {}
+            update[m.rokuCustomerIDAttributeSyncsKey] = syncs
+            m.registry.set(update)
+        end function,
+        syncRokuCustomerIDAttributeFromTransactions: function(transactions as object) as object
+            rokuCustomerID = m.rokuCustomerIDFromTransactions(transactions)
+            if rokuCustomerID = invalid then return { data: false }
+
+            userID = m.identityManager.appUserId()
+            if m.hasSyncedRokuCustomerIDAttribute(userID, rokuCustomerID) then return { data: false }
+
+            attributes = {}
+            attributes[m.rokuCustomerIDAttributeKey] = rokuCustomerID
+            result = m.api.postSubscriberAttributes({
+                userId: userID,
+                attributes: attributes,
+            })
+            if result.error <> invalid
+                _PurchasesLogger().warn("Failed to sync Roku customer ID subscriber attribute")
+                _PurchasesLogger().warn(result.error)
+                return result
+            end if
+            m.setSyncedRokuCustomerIDAttribute(userID, rokuCustomerID)
+            return { data: true }
+        end function,
         purchase: function(inputArgs = {}) as object
             m.configuration.assert()
             code = ""
@@ -798,6 +853,7 @@ function _InternalPurchases(o = {} as object) as object
 
             transactions = result.data
 
+            m.syncRokuCustomerIDAttributeFromTransactions(transactions)
             result = m.api.postReceipt({
                 userId: m.identityManager.appUserId(),
                 transaction: transactions[0],
@@ -820,6 +876,7 @@ function _InternalPurchases(o = {} as object) as object
                 return result
             end if
             allPurchases = result.data
+            m.syncRokuCustomerIDAttributeFromTransactions(allPurchases)
             for each purchase in allPurchases
                 result = m.api.postReceipt({
                     userId: m.identityManager.appUserId(),
