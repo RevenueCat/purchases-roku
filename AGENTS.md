@@ -43,7 +43,7 @@ If lint or format checks fail before your change, report the exact pre-existing 
 ## BrightScript Notes
 
 - `invalid` is the null-like value. Check it explicitly before indexing nested associative arrays.
-- Associative arrays and arrays are mutable. Use `_deepCopy()` when adding targeting context to offerings that should not mutate the original object.
+- Associative arrays and arrays are mutable. Use the internal `m._deepCopy()` helper when adding targeting context to offerings that should not mutate the original object.
 - Callback APIs support both anonymous functions and callback function names. Preserve both `roFunction`/`Function` and `roString`/`String` paths.
 - BrightScript identifiers are easy to shadow in surprising ways. Be careful when renaming parameters or local variables, especially near scoped functions.
 - Date values exposed by the SDK are `roDateTime` objects created from RevenueCat ISO 8601 strings.

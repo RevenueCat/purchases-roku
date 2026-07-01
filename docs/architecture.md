@@ -67,7 +67,7 @@ Keep network and billing behavior injectable. Tests replace the real API and bil
 - `all`: all offerings keyed by offering identifier.
 - Internal placement/targeting fields used by `currentOfferingForPlacement()`.
 
-Placement lookups should not mutate the original offerings in `all`. The SDK uses `_deepCopy()` before adding targeting and placement context.
+Placement lookups should not mutate the original offerings in `all`. The SDK uses the internal `m._deepCopy()` helper before adding targeting and placement context.
 
 ## Purchase Flow
 
