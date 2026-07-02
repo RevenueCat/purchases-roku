@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  node: circleci/node@7.2.1
+
 executors:
   ruby-node-executor:
     docker:
@@ -37,12 +40,16 @@ commands:
 
   install-yarn-dependencies:
     steps:
+      - node/install:
+          node-version: "24.11"
       - restore_cache:
           keys:
             - v1-yarn-cache-{{ checksum "yarn.lock" }}-{{ arch }}
       - run:
           name: Yarn install
-          command: corepack yarn install --frozen-lockfile
+          command: |
+            corepack enable
+            corepack yarn install --frozen-lockfile
       - save_cache:
           key: v1-yarn-cache-{{ checksum "yarn.lock" }}-{{ arch }}
           paths:
