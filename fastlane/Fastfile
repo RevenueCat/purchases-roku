@@ -1,0 +1,7 @@
+# This file contains the fastlane.tools configuration.
+# You can find the documentation at https://docs.fastlane.tools
+
+desc "Runs the Roku SDK test suite"
+lane :test do
+  sh("corepack", "yarn", "tests")
+end

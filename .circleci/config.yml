@@ -1,0 +1,76 @@
+version: 2.1
+
+executors:
+  ruby-node-executor:
+    docker:
+      - image: cimg/ruby:3.3-node
+    resource_class: small
+    working_directory: ~/purchases-roku
+    shell: /bin/bash --login -o pipefail
+
+commands:
+  install-bundle-dependencies:
+    parameters:
+      directory:
+        type: string
+        default: .
+    steps:
+      - restore_cache:
+          keys:
+            # This cache key should be updated whenever we change the Ruby version
+            - v1-gem-cache-{{ checksum "Gemfile.lock" }}-{{ arch }}-ruby-3.3
+      - run:
+          name: Verify Ruby version
+          command: ruby -v
+      - run:
+          name: Bundle install
+          working_directory: << parameters.directory >>
+          command: |
+            bundle config set --local clean 'true'
+            bundle config set --local path 'vendor/bundle'
+            bundle install
+      - save_cache:
+          # This cache key should be updated whenever we change the Ruby version
+          key: v1-gem-cache-{{ checksum "Gemfile.lock" }}-{{ arch }}-ruby-3.3
+          paths:
+            - vendor/bundle
+
+  install-yarn-dependencies:
+    steps:
+      - restore_cache:
+          keys:
+            - v1-yarn-cache-{{ checksum "yarn.lock" }}-{{ arch }}
+      - run:
+          name: Yarn install
+          command: corepack yarn install --frozen-lockfile
+      - save_cache:
+          key: v1-yarn-cache-{{ checksum "yarn.lock" }}-{{ arch }}
+          paths:
+            - ~/.cache/yarn
+
+jobs:
+  test:
+    executor:
+      name: ruby-node-executor
+    steps:
+      - checkout
+      - install-bundle-dependencies
+      - install-yarn-dependencies
+      - run:
+          name: Run tests
+          command: bundle exec fastlane test
+
+workflows:
+  run-tests:
+    when:
+      and:
+        - not:
+            equal: [scheduled_pipeline, << pipeline.trigger_source >>]
+        - or:
+            - equal: ["main", << pipeline.git.branch >>]
+            - not:
+                matches:
+                  pattern: "^(main|release/.*)$"
+                  value: << pipeline.git.branch >>
+    jobs:
+      - test
