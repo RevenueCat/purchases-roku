@@ -408,6 +408,9 @@ sub __suite_exec(args as object)
             index: subTestIndex,
             tap: args.tap
         })
+        m.__state.results.passed += suite.__state.results.passed
+        m.__state.results.failed += suite.__state.results.failed
+        m.__state.results.skipped += suite.__state.results.skipped
 
         subTestIndex++
     end for
