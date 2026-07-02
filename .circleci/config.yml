@@ -2,6 +2,7 @@ version: 2.1
 
 orbs:
   node: circleci/node@7.2.1
+  revenuecat: revenuecat/sdks-common-config@4.1.0
 
 executors:
   ruby-node-executor:
@@ -12,32 +13,6 @@ executors:
     shell: /bin/bash --login -o pipefail
 
 commands:
-  install-bundle-dependencies:
-    parameters:
-      directory:
-        type: string
-        default: .
-    steps:
-      - restore_cache:
-          keys:
-            # This cache key should be updated whenever we change the Ruby version
-            - v1-gem-cache-{{ checksum "Gemfile.lock" }}-{{ arch }}-ruby-3.3
-      - run:
-          name: Verify Ruby version
-          command: ruby -v
-      - run:
-          name: Bundle install
-          working_directory: << parameters.directory >>
-          command: |
-            bundle config set --local clean 'true'
-            bundle config set --local path 'vendor/bundle'
-            bundle install
-      - save_cache:
-          # This cache key should be updated whenever we change the Ruby version
-          key: v1-gem-cache-{{ checksum "Gemfile.lock" }}-{{ arch }}-ruby-3.3
-          paths:
-            - vendor/bundle
-
   install-yarn-dependencies:
     steps:
       - node/install:
@@ -61,7 +36,8 @@ jobs:
       name: ruby-node-executor
     steps:
       - checkout
-      - install-bundle-dependencies
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1-ruby-3.3
       - install-yarn-dependencies
       - run:
           name: Run tests
