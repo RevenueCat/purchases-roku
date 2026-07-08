@@ -80,6 +80,9 @@ function Purchases() as object
             currentOfferingForPlacement: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
                 m._internal.invoke("currentOfferingForPlacement", inputArgs, callbackFunc)
             end sub,
+            displayRecoveryDialogIfNeeded: function(callbackFunc = invalid as dynamic) as void
+                m._internal.invoke("displayRecoveryDialogIfNeeded", {}, callbackFunc)
+            end function,
             _internal: {
                 configuration: configuration,
                 identityManager: identityManager,
@@ -385,6 +388,42 @@ function _InternalPurchases(o = {} as object) as object
                 _PurchasesLogger().debug(event.GetStatusMessage())
             end if
         end function
+        displayRecoveryDialogIfNeeded: function(inputArgs = {}) as object
+            request = {}
+            request.command = "DoRecovery"
+            if inputArgs.allowPlayback <> invalid and inputArgs.allowPlayback = true
+                request.params = {
+                    recoveryContext: "playback"
+                }
+            end if
+            store = CreateObject("roChannelStore")
+            port = CreateObject("roMessagePort")
+            store.SetMessagePort(port)
+            if FindMemberFunction(store, "DoRequest") <> invalid then
+                store.DoRequest(request)
+            else
+                return {
+                    error: {
+                        code: 2,
+                        message: "Failed to do recovery",
+                    }
+                }
+            end if
+            msg = wait(0, port)
+            if (type(msg) = "roChannelStoreEvent")
+                m.logStoreEvent(msg)
+            end if
+            if msg.isRequestSucceeded() then
+                return { data: msg.GetResponse() }
+            else if msg.isRequestFailed() or msg.isRequestInterrupted() then
+                return {
+                    error: {
+                        code: msg.GetStatus(),
+                        message: msg.GetStatusMessage(),
+                    }
+                }
+            end if
+        end function,
         purchase: function(inputArgs = {}) as object
             port = CreateObject("roMessagePort")
             store = CreateObject("roChannelStore")
@@ -950,6 +989,9 @@ function _InternalPurchases(o = {} as object) as object
                 })
             }
         end sub,
+        displayRecoveryDialogIfNeeded: function(inputArgs = {}) as object
+            return m.billing.displayRecoveryDialogIfNeeded(inputArgs)
+        end function,
         _deepCopy: function(original as Object) as Object
             if original = invalid then
                 return invalid
