@@ -316,17 +316,17 @@ function __case_execute()
     end if
 end function
 
-function __case_report(index as integer, tap as object) as string
+function __case_report(index as integer, tapInstance as object) as string
     if m.mode = "skip" or m.__state.success = invalid then
-        tap.skip(index, m.description)
+        tapInstance.skip(index, m.description)
         return "skipped"
     end if
 
     if m.__state.success = true then
-        tap.pass(index, m.description)
+        tapInstance.pass(index, m.description)
         return "passed"
     else if m.__state.success = false then
-        tap.fail(index, m.description, m.__state.metadata)
+        tapInstance.fail(index, m.description, m.__state.metadata)
         return "failed"
     end if
 end function
@@ -396,9 +396,9 @@ sub __suite_exec(args as object)
         m.__filterFocused()
     end if
 
-    tap = args.tap
-    tap.enterSubTest(m.__state.description)
-    tap.plan(m.__state.suites.count() + m.__state.cases.count())
+    tapInstance = args.tap
+    tapInstance.enterSubTest(m.__state.description)
+    tapInstance.plan(m.__state.suites.count() + m.__state.cases.count())
 
     subTestIndex = 0
     for each suite in m.__state.suites
@@ -411,15 +411,15 @@ sub __suite_exec(args as object)
 
         subTestIndex++
     end for
-    tap.exitSubTest()
+    tapInstance.exitSubTest()
 
     index = subTestIndex
     for each case in m.__state.cases
-        tap.indent()
+        tapInstance.indent()
         if case.mode <> "skip" and m.mode <> "skip" and m.__state.hasSkippedAncestors <> true then
             case.exec()
         end if
-        result = case.report(index, tap)
+        result = case.report(index, tapInstance)
         if result = "passed" then
             m.__state.results.passed++
         else if result = "failed" then
@@ -427,7 +427,7 @@ sub __suite_exec(args as object)
         else
             m.__state.results.skipped++
         end if
-        tap.deindent()
+        tapInstance.deindent()
 
         index++
     end for
@@ -437,9 +437,9 @@ sub __suite_exec(args as object)
     ' ignore skipped tests as part of suite completion -- as long as the suite doesn't fail, it's
     ' basically a success
     if results.failed > 0 then
-        tap.fail(args.index, description)
+        tapInstance.fail(args.index, description)
     else
-        tap.pass(args.index, description)
+        tapInstance.pass(args.index, description)
     end if
 
     ' we may have changed context during execution, so let's update our parent's context

@@ -24,6 +24,9 @@ function configurePurchases(inputArgs = {} as object)
             return { data: purchasedTransactionFixture() }
         end function,
     }
+    if inputArgs.billing <> invalid
+        billing = inputArgs.billing
+    end if
 
     _InternalPurchases_SetPurchasesConfig({
         apiKey: Constants().TEST_API_KEY

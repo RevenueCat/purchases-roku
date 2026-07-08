@@ -24,14 +24,24 @@ function Purchases() as object
         identityManager = _InternalPurchases_IdentityManager({ registry: registry })
 
         GetGlobalAA().rc_purchasesSingleton = {
-            purchase: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
-                m._internal.invoke("purchase", inputArgs, callbackFunc)
+            purchase: sub(inputArgs = {} as object, callback = invalid as dynamic)
+                m._internal.invoke("purchase", inputArgs, callback)
             end sub,
-            syncPurchases: sub(callbackFunc = invalid as dynamic)
-                m._internal.invoke("syncPurchases", {}, callbackFunc)
+            syncPurchases: sub(callback = invalid as dynamic)
+                m._internal.invoke("syncPurchases", {}, callback)
             end sub,
             configure: sub(inputArgs = {} as object)
                 m._internal.configuration.configure(inputArgs)
+                if m._internal.configuration.autoSyncPurchasesEnabled() then
+                    m._internal.invoke("autoSyncPurchases", {}, sub(result, error)
+                        if error <> invalid
+                            _PurchasesLogger().warn("Auto sync purchases failed")
+                            _PurchasesLogger().warn(error)
+                        else
+                            _PurchasesLogger().info("Auto sync purchases completed")
+                        end if
+                    end sub)
+                end if
             end sub,
             isConfigured: function() as boolean
                 return m._internal.configuration.isConfigured()
@@ -48,77 +58,77 @@ function Purchases() as object
             logLevel: function() as string
                 return _PurchasesLogger().logLevelString()
             end function,
-            isAnonymous: sub(callbackFunc = invalid as dynamic) as object
+            isAnonymous: sub(callback = invalid as dynamic) as object
                 isAnonymous = m._internal.identityManager.isAnonymous()
-                if callbackFunc <> invalid then
-                    callbackFunc(isAnonymous, invalid)
+                if callback <> invalid then
+                    callback(isAnonymous, invalid)
                 end if
                 return isAnonymous
             end sub,
-            appUserId: sub(callbackFunc = invalid as dynamic) as object
+            appUserId: sub(callback = invalid as dynamic) as object
                 appUserId = m._internal.identityManager.appUserId()
-                if callbackFunc <> invalid then
-                    callbackFunc(appUserId, invalid)
+                if callback <> invalid then
+                    callback(appUserId, invalid)
                 end if
                 return appUserId
             end sub,
-            logIn: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
-                m._internal.invoke("logIn", inputArgs, callbackFunc)
+            logIn: sub(inputArgs = {} as object, callback = invalid as dynamic)
+                m._internal.invoke("logIn", inputArgs, callback)
             end sub,
-            logOut: sub(callbackFunc = invalid as dynamic)
-                m._internal.invoke("logOut", {}, callbackFunc)
+            logOut: sub(callback = invalid as dynamic)
+                m._internal.invoke("logOut", {}, callback)
             end sub,
-            getCustomerInfo: sub(callbackFunc = invalid as dynamic)
-                m._internal.invoke("getCustomerInfo", {}, callbackFunc)
+            getCustomerInfo: sub(callback = invalid as dynamic)
+                m._internal.invoke("getCustomerInfo", {}, callback)
             end sub,
-            setAttributes: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
-                m._internal.invoke("setAttributes", inputArgs, callbackFunc)
+            setAttributes: sub(inputArgs = {} as object, callback = invalid as dynamic)
+                m._internal.invoke("setAttributes", inputArgs, callback)
             end sub,
-            getOfferings: sub(callbackFunc = invalid as dynamic)
-                m._internal.invoke("getOfferings", {}, callbackFunc)
+            getOfferings: sub(callback = invalid as dynamic)
+                m._internal.invoke("getOfferings", {}, callback)
             end sub,
-            currentOfferingForPlacement: sub(inputArgs = {} as object, callbackFunc = invalid as dynamic)
-                m._internal.invoke("currentOfferingForPlacement", inputArgs, callbackFunc)
+            currentOfferingForPlacement: sub(inputArgs = {} as object, callback = invalid as dynamic)
+                m._internal.invoke("currentOfferingForPlacement", inputArgs, callback)
             end sub,
             _internal: {
                 configuration: configuration,
                 identityManager: identityManager,
                 callbackContext: m.context,
-                setCallbackID: function(callbackFunc as dynamic) as string
+                setCallbackID: function(callback as dynamic) as string
                     m.task.callbackID++
                     if (m.task.callbackID >= 100000) then
                         m.task.callbackID = 1
                     end if
                     callbackID = m.task.callbackID.tostr()
                     m.task.addField(callbackID, "assocarray", false)
-                    valueType = type(callbackFunc)
+                    valueType = type(callback)
                     if valueType = "roFunction" or valueType = "Function" then
                         m.task.observeField(callbackID, "_InternalPurchases_invokeCallbackFunction")
-                        m.callbackContext[callbackID] = callbackFunc
+                        m.callbackContext[callbackID] = callback
                     else if valueType = "roString" or valueType = "String" then
-                        m.task.observeField(callbackID, callbackFunc)
+                        m.task.observeField(callbackID, callback)
                     else
                         m.task.observeField(callbackID, "")
                     end if
                     return callbackID
                 end function,
-                invoke: function(name as string, inputArgs = {}, callbackFunc = invalid as dynamic)
+                invoke: function(name as string, inputArgs = {}, callback = invalid as dynamic)
                     if GetGlobalAA().isRunningRevenueCatTests <> invalid
                         if GetGlobalAA().rc_internalTestPurchases = invalid then
                             throw "Purchases SDK not configured for testing"
                         end if
                         result = GetGlobalAA().rc_internalTestPurchases[name](inputArgs)
-                        valueType = type(callbackFunc)
+                        valueType = type(callback)
                         if valueType = "roFunction" or valueType = "Function" then
-                            callbackFunc(result.data, result.error)
+                            callback(result.data, result.error)
                         else if valueType = "roString" or valueType = "String" then
-                            m[callbackFunc](result.data, result.error)
+                            m[callback](result.data, result.error)
                         end if
                     else
                         m.task["api"] = {
                             method: name,
                             args: inputArgs,
-                            callbackID: m.setCallbackID(callbackFunc),
+                            callbackID: m.setCallbackID(callback),
                         }
                     end if
                 end function
@@ -176,11 +186,22 @@ function _InternalPurchases_Configuration(o = {} as object) as object
             m.set(config)
         end function,
         set: function(config as object) as void
+            currentConfig = m.get()
+            if config.apiKey = invalid then config.apiKey = currentConfig.apiKey
+            if config.logLevel = invalid then config.logLevel = currentConfig.logLevel
+            if config.proxyUrl = invalid then config.proxyUrl = currentConfig.proxyUrl
+            if config.autoSyncPurchases = invalid then config.autoSyncPurchases = currentConfig.autoSyncPurchases
             _InternalPurchases_SetPurchasesConfig({
                 apiKey: config.apiKey,
                 logLevel: config.logLevel,
                 proxyUrl: config.proxyUrl,
+                autoSyncPurchases: config.autoSyncPurchases,
             })
+        end function,
+        autoSyncPurchasesEnabled: function() as boolean
+            autoSyncPurchases = m.get().autoSyncPurchases
+            if autoSyncPurchases = invalid then return true
+            return autoSyncPurchases <> false
         end function,
         assert: function() as void
             if m.get().apiKey = invalid then
@@ -197,44 +218,44 @@ end function
 function _PurchasesLogger() as object
     if GetGlobalAA().rc_logger = invalid then
         GetGlobalAA().rc_logger = {
-        logLevel: function() as integer
-            level = _InternalPurchases_GetPurchasesConfig().logLevel
-            if level <> invalid and m.levels[level] <> invalid then return m.levels[level]
-            return m.levels.info
-        end function,
-        logLevelString: function() as string
-            level = m.logLevel()
-            for each key in m.levels
-                if m.levels[key] = level then return key
-            end for
-            return "info"
-        end function,
-        levels: {
-            error: 3,
-            warn: 2,
-            info: 1,
-            debug: 0,
-        }
-        error: function(message) as void
-            if m.logLevel() > m.levels.error then return
-            print("😿‼️  Error: " + m.convertToString(message))
-        end function,
-        info: function(message) as void
-            if m.logLevel() > m.levels.info then return
-            print("ℹ️  Info: " + m.convertToString(message))
-        end function,
-        warn: function(message) as void
-            if m.logLevel() > m.levels.warn then return
-            print("⚠️  Warning: " + message)m.convertToString(message)
-        end function,
-        debug: function(message) as void
-            if m.logLevel() > m.levels.debug then return
-            print("🐞 Debug: " + m.convertToString(message))
-        end function,
-        convertToString: function(message) as string
-            if type(message) = "roString" or type(message) = "String" then return message
-            return FormatJson(message)
-        end function,
+            logLevel: function() as integer
+                level = _InternalPurchases_GetPurchasesConfig().logLevel
+                if level <> invalid and m.levels[level] <> invalid then return m.levels[level]
+                return m.levels.info
+            end function,
+            logLevelString: function() as string
+                level = m.logLevel()
+                for each key in m.levels
+                    if m.levels[key] = level then return key
+                end for
+                return "info"
+            end function,
+            levels: {
+                error: 3,
+                warn: 2,
+                info: 1,
+                debug: 0,
+            }
+            error: function(message) as void
+                if m.logLevel() > m.levels.error then return
+                print("😿‼️  Error: " + m.convertToString(message))
+            end function,
+            info: function(message) as void
+                if m.logLevel() > m.levels.info then return
+                print("ℹ️  Info: " + m.convertToString(message))
+            end function,
+            warn: function(message) as void
+                if m.logLevel() > m.levels.warn then return
+                print("⚠️  Warning: " + m.convertToString(message))
+            end function,
+            debug: function(message) as void
+                if m.logLevel() > m.levels.debug then return
+                print("🐞 Debug: " + m.convertToString(message))
+            end function,
+            convertToString: function(message) as string
+                if type(message) = "roString" or type(message) = "String" then return message
+                return FormatJson(message)
+            end function,
         }
     end if
     return GetGlobalAA().rc_logger
@@ -244,7 +265,7 @@ function _InternalPurchases_AppInfo(o = {} as object) as object
     return {
         appInfo: CreateObject("roAppInfo")
         GetID: function()
-        return m.appInfo.GetID()
+            return m.appInfo.GetID()
         end function,
         IsDev: function()
             return m.appInfo.IsDev()
@@ -309,11 +330,71 @@ function _InternalPurchases_Registry(sectionName) as object
         setUserId: function(userId as string) as void
             m.set({ userId: userId })
         end function,
+        getQueuedReceiptPosts: function() as object
+            entries = m.get()
+            if entries.queuedReceiptPosts = invalid then return {}
+            if type(entries.queuedReceiptPosts) <> "roAssociativeArray" then return {}
+            return entries.queuedReceiptPosts
+        end function,
+        setQueuedReceiptPosts: function(queuedReceiptPosts as object) as void
+            m.set({ queuedReceiptPosts: queuedReceiptPosts })
+        end function,
+        queueReceiptPost: function(inputArgs as object) as void
+            queuedReceiptPosts = m.getQueuedReceiptPosts()
+            id = inputArgs.id
+            if id = invalid then id = CreateObject("roDeviceInfo").getRandomUUID()
+            existingEntry = queuedReceiptPosts[id]
+            attempts = 0
+            createdAtMs = CreateObject("roDateTime").AsSeconds() * 1000&
+            if existingEntry <> invalid
+                attempts = existingEntry.attempts
+                createdAtMs = existingEntry.createdAtMs
+            end if
+            queuedReceiptPosts[id] = {
+                version: 1,
+                id: id,
+                userId: inputArgs.userId,
+                transaction: inputArgs.transaction,
+                presentedOfferingContext: inputArgs.presentedOfferingContext,
+                attempts: attempts,
+                createdAtMs: createdAtMs,
+                lastAttemptAtMs: invalid,
+            }
+            m.setQueuedReceiptPosts(queuedReceiptPosts)
+        end function,
+        removeQueuedReceiptPost: function(id as string) as void
+            queuedReceiptPosts = m.getQueuedReceiptPosts()
+            if queuedReceiptPosts[id] <> invalid
+                queuedReceiptPosts.Delete(id)
+                m.setQueuedReceiptPosts(queuedReceiptPosts)
+            end if
+        end function,
+        updateQueuedReceiptPost: function(entry as object) as void
+            queuedReceiptPosts = m.getQueuedReceiptPosts()
+            queuedReceiptPosts[entry.id] = entry
+            m.setQueuedReceiptPosts(queuedReceiptPosts)
+        end function,
+        purgeExpiredQueuedReceiptPosts: function() as void
+            queuedReceiptPosts = m.getQueuedReceiptPosts()
+            nowMs = CreateObject("roDateTime").AsSeconds() * 1000&
+            ttlMs = 30& * 24& * 60& * 60& * 1000&
+            expiredIds = []
+            for each id in queuedReceiptPosts
+                entry = queuedReceiptPosts[id]
+                if entry.createdAtMs <> invalid and nowMs - entry.createdAtMs > ttlMs
+                    expiredIds.push(id)
+                end if
+            end for
+            for each id in expiredIds
+                queuedReceiptPosts.Delete(id)
+            end for
+            m.setQueuedReceiptPosts(queuedReceiptPosts)
+        end function,
     }
 end function
 
 function _InternalPurchases_IdentityManager(o = {} as object) as object
-    return  {
+    return {
         registry: o.registry,
         setUserId: function(userId as string) as void
             m.registry.setUserId(userId)
@@ -509,7 +590,7 @@ function _InternalPurchases(o = {} as object) as object
             "X-Platform": "roku",
             "X-Client-Bundle-ID": appInfo.GetID(),
             "X-Client-Version": appInfo.GetVersion(),
-            "X-Version": "0.0.2",
+            "X-Version": "0.1.0",
             "X-Platform-Version": deviceInfo.GetOSVersion(),
             "X-Storefront": deviceInfo.GetCountryCode(),
             "X-Is-Sandbox": appInfo.IsDev().ToStr(),
@@ -532,7 +613,7 @@ function _InternalPurchases(o = {} as object) as object
             return {
                 getCustomerInfo: m.getBaseUrl() + "subscribers/" + m.identityManager.appUserId(),
                 getOfferings: m.getBaseUrl() + "subscribers/" + m.identityManager.appUserId() + "/offerings"
-                postSubscriberAttributes: m.getBaseUrl() + "subscribers/" +  m.identityManager.appUserId() + "/attributes",
+                postSubscriberAttributes: m.getBaseUrl() + "subscribers/" + m.identityManager.appUserId() + "/attributes",
                 identify: m.getBaseUrl() + "subscribers/identify",
                 postReceipt: m.getBaseUrl() + "receipts",
             }
@@ -688,6 +769,89 @@ function _InternalPurchases(o = {} as object) as object
         registry: registry,
         configuration: configuration,
         identityManager: identityManager,
+        isSyncingPurchases: false,
+        maxReceiptPostAttempts: 5,
+        receiptPostQueueID: function(transaction as object) as string
+            if transaction.purchaseId <> invalid then return transaction.purchaseId
+            if transaction.purchase_id <> invalid then return transaction.purchase_id
+            if transaction.code <> invalid then return transaction.code + "_" + CreateObject("roDateTime").AsSeconds().ToStr()
+            return CreateObject("roDeviceInfo").getRandomUUID()
+        end function,
+        queueFailedReceiptPost: function(inputArgs as object) as void
+            m.registry.queueReceiptPost({
+                id: m.receiptPostQueueID(inputArgs.transaction),
+                userId: inputArgs.userId,
+                transaction: inputArgs.transaction,
+                presentedOfferingContext: inputArgs.presentedOfferingContext,
+            })
+        end function,
+        postReceiptWithRetryQueue: function(inputArgs = {}) as object
+            result = m.api.postReceipt(inputArgs)
+            if result.error <> invalid
+                m.queueFailedReceiptPost(inputArgs)
+            end if
+            return result
+        end function,
+        drainReceiptPostQueue: function(inputArgs = {}) as object
+            m.configuration.assert()
+            m.registry.purgeExpiredQueuedReceiptPosts()
+            queuedReceiptPosts = m.registry.getQueuedReceiptPosts()
+            failures = []
+            postedCount = 0
+
+            for each id in queuedReceiptPosts
+                entry = queuedReceiptPosts[id]
+                if entry.attempts = invalid then entry.attempts = 0
+                if entry.attempts >= m.maxReceiptPostAttempts
+                    failures.push(entry)
+                else
+                    entry.attempts++
+                    entry.lastAttemptAtMs = CreateObject("roDateTime").AsSeconds() * 1000&
+                    m.registry.updateQueuedReceiptPost(entry)
+
+                    result = m.api.postReceipt({
+                        userId: entry.userId,
+                        transaction: entry.transaction,
+                        presentedOfferingContext: entry.presentedOfferingContext,
+                    })
+
+                    if result.error = invalid
+                        postedCount++
+                        m.registry.removeQueuedReceiptPost(id)
+                    else
+                        failures.push(entry)
+                    end if
+                end if
+            end for
+
+            if failures.Count() > 0
+                return {
+                    data: {
+                        postedQueuedReceipts: postedCount,
+                        failedQueuedReceipts: failures,
+                    },
+                    error: {
+                        code: m.errors.configurationError.code,
+                        message: "One or more queued receipt posts failed.",
+                    }
+                }
+            end if
+
+            return {
+                data: {
+                    postedQueuedReceipts: postedCount,
+                    failedQueuedReceipts: [],
+                }
+            }
+        end function,
+        autoSyncPurchases: function(inputArgs = {}) as object
+            queueResult = m.drainReceiptPostQueue()
+            syncResult = m.syncPurchases({ isAutoSync: true })
+            if queueResult.error <> invalid
+                return queueResult
+            end if
+            return syncResult
+        end function,
         logIn: function(userId as string) as object
             m.configuration.assert()
             if userId = invalid or userId = ""
@@ -798,7 +962,7 @@ function _InternalPurchases(o = {} as object) as object
 
             transactions = result.data
 
-            result = m.api.postReceipt({
+            result = m.postReceiptWithRetryQueue({
                 userId: m.identityManager.appUserId(),
                 transaction: transactions[0],
                 presentedOfferingContext: presentedOfferingContext,
@@ -815,20 +979,46 @@ function _InternalPurchases(o = {} as object) as object
         end function,
         syncPurchases: function(inputArgs = {}) as object
             m.configuration.assert()
+            if m.isSyncingPurchases
+                _PurchasesLogger().info("syncPurchases already in progress")
+                return m.getCustomerInfo()
+            end if
+            m.isSyncingPurchases = true
             result = m.billing.getAllPurchases()
             if result.error <> invalid
+                m.isSyncingPurchases = false
                 return result
             end if
             allPurchases = result.data
+            failures = []
+            postedCount = 0
             for each purchase in allPurchases
-                result = m.api.postReceipt({
+                result = m.postReceiptWithRetryQueue({
                     userId: m.identityManager.appUserId(),
                     transaction: purchase,
                 })
                 if result.error <> invalid
-                    return result
+                    failures.push({
+                        transaction: purchase,
+                        error: result.error,
+                    })
+                else
+                    postedCount++
                 end if
             end for
+            m.isSyncingPurchases = false
+            if failures.Count() > 0
+                return {
+                    data: {
+                        postedPurchases: postedCount,
+                        failedPurchases: failures,
+                    },
+                    error: {
+                        code: m.errors.configurationError.code,
+                        message: "One or more purchases could not be synced.",
+                    }
+                }
+            end if
             return m.getCustomerInfo()
         end function,
         getOfferings: function(inputArgs = {}) as object
@@ -950,7 +1140,7 @@ function _InternalPurchases(o = {} as object) as object
                 })
             }
         end sub,
-        _deepCopy: function(original as Object) as Object
+        _deepCopy: function(original as object) as object
             if original = invalid then
                 return invalid
             end if
