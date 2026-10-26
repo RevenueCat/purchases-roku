@@ -10,15 +10,24 @@ function runTests() as void
 
     GetGlobalAA().isRunningRevenueCatTests = true
 
-    results = roca(args).describe("Tests", sub(t)
+    suite = roca(args).describe("Tests", sub(t)
         ConfigurationTests(t)
         CustomerInfoTests(t)
         OfferingsTests(t)
         PurchaseTests(t)
         IdentityTests(t)
-    end sub).__state.results
+    end sub)
 
-    if results.failed > 0 then
+    if countFailedTests(suite) > 0 then
         throw "Tests failed"
     end if
+end function
+
+' Each describe block only counts its own cases, so failures in nested blocks have to be added up
+function countFailedTests(suite as object) as integer
+    failed = suite.__state.results.failed
+    for each child in suite.__state.suites
+        failed += countFailedTests(child)
+    end for
+    return failed
 end function
