@@ -16,6 +16,7 @@ function runTests() as void
         OfferingsTests(t)
         PurchaseTests(t)
         IdentityTests(t)
+        NetworkTests(t)
     end sub).__state.results
 
     if results.failed > 0 then

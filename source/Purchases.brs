@@ -357,6 +357,11 @@ function _InternalPurchases(o = {} as object) as object
             message: "There is an issue with your configuration."
             code: 23
             codeName: "CONFIGURATION_ERROR"
+        },
+        networkError: {
+            message: "Error performing request."
+            code: 10
+            codeName: "NETWORK_ERROR"
         }
     }
 
@@ -501,6 +506,7 @@ function _InternalPurchases(o = {} as object) as object
     end if
 
     api = {
+        errors: ERRORS,
         appInfo: appInfo,
         deviceInfo: deviceInfo,
         identityManager: identityManager,
@@ -522,6 +528,14 @@ function _InternalPurchases(o = {} as object) as object
             }
             headers.Append(m._defaultHeaders)
             return headers
+        end function,
+        ' Failed requests without a backend error body (connection failures, gateway pages) are network errors.
+        ' A negative status is a transport failure whose body holds the failure reason, not JSON.
+        responseError: function(result as object) as object
+            error = invalid
+            if result.status >= 0 then error = result.json()
+            if type(error) <> "roAssociativeArray" then return m.errors.networkError
+            return error
         end function,
         getBaseUrl: function() as string
             proxyUrl = m.configuration.get().proxyUrl
@@ -549,7 +563,7 @@ function _InternalPurchases(o = {} as object) as object
                 }
             else
                 return {
-                    error: result.json()
+                    error: m.responseError(result)
                 }
             end if
         end function,
@@ -569,7 +583,7 @@ function _InternalPurchases(o = {} as object) as object
                 }
             else
                 return {
-                    error: result.json()
+                    error: m.responseError(result)
                 }
             end if
         end function,
@@ -585,7 +599,7 @@ function _InternalPurchases(o = {} as object) as object
                 }
             else
                 return {
-                    error: result.json()
+                    error: m.responseError(result)
                 }
             end if
         end function,
@@ -615,7 +629,7 @@ function _InternalPurchases(o = {} as object) as object
                 }
             else
                 return {
-                    error: result.json()
+                    error: m.responseError(result)
                 }
             end if
         end function,
@@ -671,7 +685,7 @@ function _InternalPurchases(o = {} as object) as object
                 }
             else
                 return {
-                    error: result.json()
+                    error: m.responseError(result)
                 }
             end if
         end function,
