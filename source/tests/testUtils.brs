@@ -157,3 +157,11 @@ function assertSubscriberIsValid(t, subscriber)
         t.assert.isValid(transaction.productIdentifier, "nonSubscriptionTransactions productIdentifier error")
     end for
 end function
+
+function arrayContainsString(values as object, expected as string) as boolean
+    for each value in values
+        valueType = type(value)
+        if (valueType = "roString" or valueType = "String") and value = expected then return true
+    end for
+    return false
+end function
