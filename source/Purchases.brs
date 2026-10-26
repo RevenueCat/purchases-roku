@@ -175,12 +175,18 @@ function _InternalPurchases_Configuration(o = {} as object) as object
             end if
             m.set(config)
         end function,
+        ' Only the keys present in config change, so setLogLevel and setProxyURL keep the rest of the configuration
         set: function(config as object) as void
-            _InternalPurchases_SetPurchasesConfig({
-                apiKey: config.apiKey,
-                logLevel: config.logLevel,
-                proxyUrl: config.proxyUrl,
-            })
+            current = m.get()
+            updated = {
+                apiKey: current.apiKey,
+                logLevel: current.logLevel,
+                proxyUrl: current.proxyUrl,
+            }
+            for each key in ["apiKey", "logLevel", "proxyUrl"]
+                if config.DoesExist(key) then updated[key] = config[key]
+            end for
+            _InternalPurchases_SetPurchasesConfig(updated)
         end function,
         assert: function() as void
             if m.get().apiKey = invalid then
