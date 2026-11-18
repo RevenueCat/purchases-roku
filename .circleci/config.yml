@@ -2,7 +2,7 @@ version: 2.1
 
 orbs:
   node: circleci/node@7.2.1
-  revenuecat: revenuecat/sdks-common-config@4.1.0
+  revenuecat: revenuecat/sdks-common-config@4.9.0
 
 executors:
   ruby-node-executor:
@@ -57,3 +57,27 @@ workflows:
                   value: << pipeline.git.branch >>
     jobs:
       - test
+
+  mirror:
+    when:
+      and:
+        - equal: ["main", << pipeline.git.branch >>]
+        - not:
+            equal: [scheduled_pipeline, << pipeline.trigger_source >>]
+    jobs:
+      - revenuecat/mirror-to-public:
+          public_repo_name: purchases-roku
+          context: sdk-public-mirror
+
+  mirror-release-tag:
+    when:
+      matches: { pattern: "^[0-9]+\\.[0-9]+\\.[0-9]+.*$", value: << pipeline.git.tag >> }
+    jobs:
+      - revenuecat/mirror-to-public:
+          public_repo_name: purchases-roku
+          context: sdk-public-mirror
+          filters:
+            tags:
+              only: /^[0-9]+\.[0-9]+\.[0-9]+.*$/
+            branches:
+              ignore: /.*/
