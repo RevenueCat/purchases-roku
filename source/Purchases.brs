@@ -1096,7 +1096,7 @@ function _InternalPurchases(o = {} as object) as object
                         productIdentifier: entry.key,
                     })
                 end for
-                allPurchasedProductIds.push(productIdentifier)
+                allPurchasedProductIds.push(entry.key)
             end for
             latestExpirationDate = invalid
             for each item in allExpirationDatesByProduct.Items()

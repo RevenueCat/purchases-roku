@@ -30,6 +30,38 @@ function customerInfoTests(t)
             end sub)
         end sub)
 
+        t.it("Includes subscription and non-subscription products in allPurchasedProductIds", sub(t)
+            Purchases().getCustomerInfo(sub(result, error)
+                m.t.assert.isInvalid(error, "Unexpected error")
+                productIds = result.allPurchasedProductIds
+                m.t.assert.equal(productIds.Count(), 3, "Unexpected number of product ids")
+                m.t.assert.isTrue(arrayContainsString(productIds, "mark_premium"), "Missing subscription product id")
+                m.t.assert.isTrue(arrayContainsString(productIds, "upgrade_downgrade:month"), "Missing subscription product id")
+                m.t.assert.isTrue(arrayContainsString(productIds, "com.revenuecat.product.tip"), "Missing non-subscription product id")
+            end sub)
+        end sub)
+
+        t.it("Includes non-subscription products in allPurchasedProductIds without subscriptions", sub(t)
+            configurePurchases({
+                t: t, api: {
+                    getCustomerInfo: function(inputArgs = {})
+                        response = subscriberFixture()
+                        response.subscriber.entitlements = {}
+                        response.subscriber.subscriptions = {}
+                        return { data: response }
+                    end function,
+                }
+            })
+
+            Purchases().getCustomerInfo(sub(result, error)
+                m.t.assert.isInvalid(error, "Unexpected error")
+                productIds = result.allPurchasedProductIds
+                m.t.assert.equal(productIds.Count(), 1, "Unexpected number of product ids")
+                m.t.assert.isTrue(arrayContainsString(productIds, "com.revenuecat.product.tip"), "Missing non-subscription product id")
+                m.t.assert.equal(result.nonSubscriptionTransactions[0].productIdentifier, "com.revenuecat.product.tip", "Unexpected transaction product id")
+            end sub)
+        end sub)
+
         t.it("Can set subscriber attributes", sub(t)
             Purchases().logIn("user1", sub(subscriber, error)
                 m.t.assert.isInvalid(error, "Unexpected error")
